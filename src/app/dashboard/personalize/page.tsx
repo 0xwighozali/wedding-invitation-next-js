@@ -2,6 +2,25 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
+import Select from "react-select";
+
+const ClientOnly = dynamic(() => import("@/components/ClientOnly"), {
+  ssr: false,
+});
+
+// gunakan placeholder bankOptions yang sama seperti BankSelect
+const bankOptions = [
+  { value: "bca", label: "BCA" },
+  { value: "bri", label: "BRI" },
+  { value: "bni", label: "BNI" },
+  { value: "mandiri", label: "Mandiri" },
+  { value: "btn", label: "BTN" },
+  { value: "cimb", label: "CIMB Niaga" },
+  { value: "danamon", label: "Danamon" },
+  { value: "permata", label: "Permata" },
+  { value: "muamalat", label: "Muamalat" },
+];
 
 export default function PersonalizePage() {
   const [form, setForm] = useState({
@@ -17,6 +36,12 @@ export default function PersonalizePage() {
     resepsiDateTime: "",
     websiteTitle: "",
     customUrl: "",
+    bank1Name: "",
+    bank1AccountName: "",
+    bank1AccountNumber: "",
+    bank2Name: "",
+    bank2AccountName: "",
+    bank2AccountNumber: "",
   });
 
   const [heroImage, setHeroImage] = useState<File | null>(null);
@@ -26,43 +51,20 @@ export default function PersonalizePage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmitForm1 = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Data mempelai & acara disimpan:", {
-      groomName: form.groomName,
-      brideName: form.brideName,
-      groomParents: form.groomParents,
-      brideParents: form.brideParents,
-      akadLocation: form.akadLocation,
-      akadMap: form.akadMap,
-      akadDateTime: form.akadDateTime,
-      resepsiLocation: form.resepsiLocation,
-      resepsiMap: form.resepsiMap,
-      resepsiDateTime: form.resepsiDateTime,
-    });
-  };
-
-  const handleSubmitForm2 = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Data website disimpan:", {
-      websiteTitle: form.websiteTitle,
-      customUrl: form.customUrl,
-      heroImage,
-      groomImage,
-      brideImage,
-      galleryImages,
-    });
-  };
+  const handleSelectChange =
+    (key: "bank1Name" | "bank2Name") => (selected: any) => {
+      setForm((prev) => ({ ...prev, [key]: selected?.value || "" }));
+    };
 
   const renderUploadBox = (
     image: File | null,
     onUpload: (file: File) => void,
     onRemove: () => void
-  ) => {
-    return image ? (
+  ) =>
+    image ? (
       <div className="relative w-full aspect-video bg-gray-100 rounded overflow-hidden">
         <Image
           src={URL.createObjectURL(image)}
@@ -83,10 +85,7 @@ export default function PersonalizePage() {
         <input
           type="file"
           accept="image/*"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) onUpload(file);
-          }}
+          onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
           className="hidden"
         />
         <div className="flex flex-col items-center">
@@ -95,7 +94,6 @@ export default function PersonalizePage() {
         </div>
       </label>
     );
-  };
 
   const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -106,15 +104,30 @@ export default function PersonalizePage() {
     setGalleryImages((prev) => [...prev, ...files]);
   };
 
-  const removeGalleryImage = (index: number) => {
-    setGalleryImages((prev) => prev.filter((_, i) => i !== index));
+  const removeGalleryImage = (i: number) =>
+    setGalleryImages((prev) => prev.filter((_, idx) => idx !== i));
+
+  const handleSubmitForm1 = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Data mempelai & acara:", form);
+  };
+
+  const handleSubmitForm2 = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Data website:", {
+      ...form,
+      heroImage,
+      groomImage,
+      brideImage,
+      galleryImages,
+    });
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-2 space-y-6">
       <h1 className="text-lg font-semibold">Let's get started</h1>
 
-      {/* Form 1: Data Mempelai & Acara */}
+      {/* Form 1: Mempelai */}
       <form
         onSubmit={handleSubmitForm1}
         className="bg-white p-4 rounded shadow-sm text-sm font-normal space-y-6"
@@ -123,9 +136,9 @@ export default function PersonalizePage() {
           Data Mempelai & Acara
         </h2>
 
-        {/* Nama Mempelai */}
+        {/* Mempelai */}
         <div>
-          <label className="block mb-1 text-gray-700 font-semibold">
+          <label className="block mb-1 font-semibold text-gray-700">
             Nama Mempelai
           </label>
           <input
@@ -148,7 +161,7 @@ export default function PersonalizePage() {
 
         {/* Orang Tua */}
         <div>
-          <label className="block mb-1 text-gray-700 font-semibold">
+          <label className="block mb-1 font-semibold text-gray-700">
             Nama Orang Tua Mempelai
           </label>
           <input
@@ -171,7 +184,7 @@ export default function PersonalizePage() {
 
         {/* Akad */}
         <div>
-          <label className="block mb-1 text-gray-700 font-semibold">
+          <label className="block mb-1 font-semibold text-gray-700">
             Tempat Akad
           </label>
           <input
@@ -185,29 +198,26 @@ export default function PersonalizePage() {
           <input
             type="text"
             name="akadMap"
+            value={form.akadMap}
             onChange={handleChange}
             placeholder="Link Google Maps (opsional)"
             className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
           />
-
-          <label className="block mb-1 text-gray-700 font-semibold">
+          <label className="block mb-1 font-semibold text-gray-700">
             Tanggal & Waktu Akad
           </label>
-          <div className="relative w-full mb-3">
-            <input
-              type="datetime-local"
-              name="akadDateTime"
-              value={form.akadDateTime}
-              onChange={handleChange}
-              className="w-full border-b border-gray-300 p-1 pr-10 bg-transparent text-base"
-            />
-            <i className="ri-calendar-line absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg pointer-events-none" />
-          </div>
+          <input
+            type="datetime-local"
+            name="akadDateTime"
+            value={form.akadDateTime}
+            onChange={handleChange}
+            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
+          />
         </div>
 
         {/* Resepsi */}
         <div>
-          <label className="block mb-1 text-gray-700 font-semibold">
+          <label className="block mb-1 font-semibold text-gray-700">
             Tempat Resepsi
           </label>
           <input
@@ -221,24 +231,21 @@ export default function PersonalizePage() {
           <input
             type="text"
             name="resepsiMap"
+            value={form.resepsiMap}
             onChange={handleChange}
             placeholder="Link Google Maps (opsional)"
             className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
           />
-
-          <label className="block mb-1 text-gray-700 font-semibold">
+          <label className="block mb-1 font-semibold text-gray-700">
             Tanggal & Waktu Resepsi
           </label>
-          <div className="relative w-full mb-3">
-            <input
-              type="datetime-local"
-              name="resepsiDateTime"
-              value={form.resepsiDateTime}
-              onChange={handleChange}
-              className="w-full border-b border-gray-300 p-1 pr-10 bg-transparent text-base"
-            />
-            <i className="ri-calendar-line absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg pointer-events-none" />
-          </div>
+          <input
+            type="datetime-local"
+            name="resepsiDateTime"
+            value={form.resepsiDateTime}
+            onChange={handleChange}
+            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
+          />
         </div>
 
         <button
@@ -249,16 +256,16 @@ export default function PersonalizePage() {
         </button>
       </form>
 
-      {/* Form 2: Website Setting */}
+      {/* Form Website Setting + Uploads + Galeri + Digital Gift */}
       <form
         onSubmit={handleSubmitForm2}
-        className="bg-white p-4 rounded shadow-sm text-sm font-normal space-y-6"
+        className="bg-white p-4 rounded shadow text-sm space-y-6"
       >
         <h2 className="text-lg font-semibold border-b pb-2">Website Setting</h2>
 
-        {/* Website Title & Custom URL */}
+        {/* Website title */}
         <div>
-          <label className="block mb-1 text-gray-700 font-semibold">
+          <label className="block mb-1 font-semibold text-gray-700">
             Nama Panggilan ke-dua Mempelai
           </label>
           <input
@@ -269,13 +276,11 @@ export default function PersonalizePage() {
             placeholder="Contoh: Alwi, Kia"
             className="w-full mb-1 border-b border-gray-300 p-1 bg-transparent text-base"
           />
-          <p className="text-xs text-gray-500 mt-1">
-            Gunakan tanda koma (,) sebagai pemisah.
-          </p>
         </div>
 
+        {/* URL */}
         <div>
-          <label className="block mb-1 text-gray-700 font-semibold">
+          <label className="block mb-1 font-semibold text-gray-700">
             Custom URL
           </label>
           <input
@@ -286,59 +291,35 @@ export default function PersonalizePage() {
             placeholder="Contoh: alwi-kia"
             className="w-full mb-1 border-b border-gray-300 p-1 bg-transparent text-base"
           />
-          <p className="text-xs text-gray-500 mt-1">
-            Domain: https://undanganmu.com/alwi-kia
-          </p>
         </div>
 
-        {/* Hero Image */}
+        {/* Upload Image Section */}
         <div>
-          <label className="block mb-1 text-gray-700 font-semibold">
+          <label className="block mb-1 font-semibold text-gray-700">
             Hero Image
           </label>
-          {renderUploadBox(
-            heroImage,
-            (file) => setHeroImage(file),
-            () => setHeroImage(null)
-          )}
+          {renderUploadBox(heroImage, setHeroImage, () => setHeroImage(null))}
         </div>
 
-        {/* Foto Mempelai */}
         <div>
-          <label className="block mb-1 text-gray-700 font-semibold">
+          <label className="block mb-1 font-semibold text-gray-700">
             Foto Kedua Mempelai
           </label>
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              {renderUploadBox(
-                groomImage,
-                (file) => setGroomImage(file),
-                () => setGroomImage(null)
-              )}
-              <p className="text-xs text-gray-500 mt-1">
-                Unggah foto mempelai pria.
-              </p>
-            </div>
-            <div>
-              {renderUploadBox(
-                brideImage,
-                (file) => setBrideImage(file),
-                () => setBrideImage(null)
-              )}
-              <p className="text-xs text-gray-500 mt-1">
-                Unggah foto mempelai wanita.
-              </p>
-            </div>
+            {renderUploadBox(groomImage, setGroomImage, () =>
+              setGroomImage(null)
+            )}
+            {renderUploadBox(brideImage, setBrideImage, () =>
+              setBrideImage(null)
+            )}
           </div>
         </div>
 
-        {/* Galeri Foto */}
         <div>
-          <label className="block mb-1 text-gray-700 font-semibold">
+          <label className="block mb-1 font-semibold text-gray-700">
             Galeri Foto (maksimal 10)
           </label>
           <div className="grid grid-cols-3 gap-2 mb-2">
-            {/* Tombol tambah selalu di awal */}
             {galleryImages.length < 10 && (
               <label className="flex items-center justify-center aspect-square border border-dashed border-gray-300 rounded cursor-pointer bg-gray-50 hover:bg-gray-100">
                 <input
@@ -351,8 +332,6 @@ export default function PersonalizePage() {
                 <i className="ri-image-add-line text-2xl text-gray-400" />
               </label>
             )}
-
-            {/* Gambar galeri */}
             {galleryImages.map((img, index) => (
               <div
                 key={index}
@@ -376,9 +355,77 @@ export default function PersonalizePage() {
           </div>
         </div>
 
+        {/* Digital Gift */}
+        <div>
+          <label className="block mb-1 font-semibold text-gray-700">
+            Digital Gift (opsional)
+          </label>
+          <div className="space-y-4">
+            {/* Bank 1 */}
+            <div className="bg-white p-4 rounded shadow-sm text-sm font-normal space-y-6">
+              <label className="block mb-1">Bank 1</label>
+              <ClientOnly>
+                <Select
+                  placeholder="Pilih Nama Bank 1"
+                  options={bankOptions}
+                  isSearchable
+                  value={bankOptions.find((o) => o.value === form.bank1Name)}
+                  onChange={handleSelectChange("bank1Name")}
+                />
+              </ClientOnly>
+              <input
+                type="text"
+                name="bank1AccountName"
+                value={form.bank1AccountName}
+                onChange={handleChange}
+                placeholder="Nama Pemilik Rekening"
+                className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent"
+              />
+              <input
+                type="text"
+                name="bank1AccountNumber"
+                value={form.bank1AccountNumber}
+                onChange={handleChange}
+                placeholder="Nomor Rekening"
+                className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent"
+              />
+            </div>
+
+            {/* Bank 2 */}
+            <div className="bg-white p-4 rounded shadow-sm text-sm font-normal space-y-6">
+              <label className="block mb-1">Bank 2</label>
+              <ClientOnly>
+                <Select
+                  placeholder="Pilih Nama Bank 2"
+                  options={bankOptions}
+                  isSearchable
+                  value={bankOptions.find((o) => o.value === form.bank2Name)}
+                  onChange={handleSelectChange("bank2Name")}
+                />
+              </ClientOnly>
+              <input
+                type="text"
+                name="bank2AccountName"
+                value={form.bank2AccountName}
+                onChange={handleChange}
+                placeholder="Nama Pemilik Rekening"
+                className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent"
+              />
+              <input
+                type="text"
+                name="bank2AccountNumber"
+                value={form.bank2AccountNumber}
+                onChange={handleChange}
+                placeholder="Nomor Rekening"
+                className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent"
+              />
+            </div>
+          </div>
+        </div>
+
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded shadow text-sm"
+          className="w-full bg-blue-600 text-white py-2 rounded shadow"
         >
           Simpan
         </button>
