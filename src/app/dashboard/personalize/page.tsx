@@ -130,7 +130,7 @@ export default function PersonalizePage() {
             value={form.groomName}
             onChange={handleChange}
             placeholder="Mempelai pria"
-            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent"
+            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
           />
           <input
             type="text"
@@ -138,7 +138,7 @@ export default function PersonalizePage() {
             value={form.brideName}
             onChange={handleChange}
             placeholder="Mempelai wanita"
-            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent"
+            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
           />
         </div>
 
@@ -153,7 +153,7 @@ export default function PersonalizePage() {
             value={form.groomParents}
             onChange={handleChange}
             placeholder="Bapak/ibu mempelai pria"
-            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent"
+            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
           />
           <input
             type="text"
@@ -161,7 +161,7 @@ export default function PersonalizePage() {
             value={form.brideParents}
             onChange={handleChange}
             placeholder="Bapak/ibu mempelai wanita"
-            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent"
+            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
           />
         </div>
 
@@ -176,7 +176,7 @@ export default function PersonalizePage() {
             value={form.akadLocation}
             onChange={handleChange}
             placeholder="Contoh: Masjid Agung"
-            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent"
+            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
           />
           <div className="relative w-full mb-3">
             <input
@@ -184,7 +184,7 @@ export default function PersonalizePage() {
               name="akadDateTime"
               value={form.akadDateTime}
               onChange={handleChange}
-              className="w-full border-b border-gray-300 p-1 pr-10 bg-transparent"
+              className="w-full border-b border-gray-300 p-1 pr-10 bg-transparent text-base"
             />
             <i className="ri-calendar-line absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg pointer-events-none" />
           </div>
