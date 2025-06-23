@@ -10,8 +10,10 @@ export default function PersonalizePage() {
     groomParents: "",
     brideParents: "",
     akadLocation: "",
+    akadMap: "",
     akadDateTime: "",
     resepsiLocation: "",
+    resepsiMap: "",
     resepsiDateTime: "",
     websiteTitle: "",
     customUrl: "",
@@ -35,8 +37,10 @@ export default function PersonalizePage() {
       groomParents: form.groomParents,
       brideParents: form.brideParents,
       akadLocation: form.akadLocation,
+      akadMap: form.akadMap,
       akadDateTime: form.akadDateTime,
       resepsiLocation: form.resepsiLocation,
+      resepsiMap: form.resepsiMap,
       resepsiDateTime: form.resepsiDateTime,
     });
   };
@@ -168,7 +172,7 @@ export default function PersonalizePage() {
         {/* Akad */}
         <div>
           <label className="block mb-1 text-gray-700 font-semibold">
-            Tempat & Tanggal Akad
+            Tempat Akad
           </label>
           <input
             type="text"
@@ -178,6 +182,17 @@ export default function PersonalizePage() {
             placeholder="Contoh: Masjid Agung"
             className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
           />
+          <input
+            type="text"
+            name="akadMap"
+            onChange={handleChange}
+            placeholder="Link Google Maps (opsional)"
+            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
+          />
+
+          <label className="block mb-1 text-gray-700 font-semibold">
+            Tanggal & Waktu Akad
+          </label>
           <div className="relative w-full mb-3">
             <input
               type="datetime-local"
@@ -193,7 +208,7 @@ export default function PersonalizePage() {
         {/* Resepsi */}
         <div>
           <label className="block mb-1 text-gray-700 font-semibold">
-            Tempat & Tanggal Resepsi
+            Tempat Resepsi
           </label>
           <input
             type="text"
@@ -201,15 +216,26 @@ export default function PersonalizePage() {
             value={form.resepsiLocation}
             onChange={handleChange}
             placeholder="Contoh: Gedung Graha"
-            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent"
+            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
           />
+          <input
+            type="text"
+            name="resepsiMap"
+            onChange={handleChange}
+            placeholder="Link Google Maps (opsional)"
+            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
+          />
+
+          <label className="block mb-1 text-gray-700 font-semibold">
+            Tanggal & Waktu Resepsi
+          </label>
           <div className="relative w-full mb-3">
             <input
               type="datetime-local"
               name="resepsiDateTime"
               value={form.resepsiDateTime}
               onChange={handleChange}
-              className="w-full border-b border-gray-300 p-1 pr-10 bg-transparent"
+              className="w-full border-b border-gray-300 p-1 pr-10 bg-transparent text-base"
             />
             <i className="ri-calendar-line absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg pointer-events-none" />
           </div>
@@ -241,7 +267,7 @@ export default function PersonalizePage() {
             value={form.websiteTitle}
             onChange={handleChange}
             placeholder="Contoh: Alwi, Kia"
-            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
+            className="w-full mb-1 border-b border-gray-300 p-1 bg-transparent text-base"
           />
           <p className="text-xs text-gray-500 mt-1">
             Gunakan tanda koma (,) sebagai pemisah.
