@@ -241,7 +241,7 @@ export default function PersonalizePage() {
             value={form.websiteTitle}
             onChange={handleChange}
             placeholder="Contoh: Alwi, Kia"
-            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent"
+            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
           />
           <p className="text-xs text-gray-500 mt-1">
             Gunakan tanda koma (,) sebagai pemisah.
@@ -257,11 +257,11 @@ export default function PersonalizePage() {
             name="customUrl"
             value={form.customUrl}
             onChange={handleChange}
-            placeholder="Contoh: alwi-zahra"
-            className="w-full mb-1 border-b border-gray-300 p-1 bg-transparent"
+            placeholder="Contoh: alwi-kia"
+            className="w-full mb-1 border-b border-gray-300 p-1 bg-transparent text-base"
           />
           <p className="text-xs text-gray-500 mt-1">
-            Domain: https://undanganmu.com/alwi-zahra
+            Domain: https://undanganmu.com/alwi-kia
           </p>
         </div>
 

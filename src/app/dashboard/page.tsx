@@ -184,7 +184,7 @@ export default function DashboardPage() {
               placeholder="Cari tamu..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded shadow-sm text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded shadow-sm text-sm text-base"
             />
             <button className="bg-gray-200 w-10 h-10 rounded flex items-center justify-center">
               <i className="ri-search-line text-lg text-gray-700" />
@@ -320,19 +320,19 @@ function renderModal(
       <div className="bg-white p-6 rounded w-full max-w-sm text-sm font-normal shadow-sm -translate-y-25">
         <h2 className="text-base font-semibold mb-4">{title}</h2>
         <input
-          className="w-full border border-gray-300 p-2 rounded mb-2"
+          className="w-full border border-gray-300 p-2 rounded mb-2 text-base"
           placeholder="Nama"
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
         />
         <input
-          className="w-full border border-gray-300 p-2 rounded mb-2"
+          className="w-full border border-gray-300 p-2 rounded mb-2 text-base"
           placeholder="No HP"
           value={form.phone}
           onChange={(e) => setForm({ ...form, phone: e.target.value })}
         />
         <input
-          className="w-full border border-gray-300 p-2 rounded mb-4"
+          className="w-full border border-gray-300 p-2 rounded mb-4 text-base"
           placeholder="Alamat"
           value={form.address}
           onChange={(e) => setForm({ ...form, address: e.target.value })}
