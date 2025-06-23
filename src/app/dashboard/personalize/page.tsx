@@ -178,13 +178,16 @@ export default function PersonalizePage() {
             placeholder="Contoh: Masjid Agung"
             className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent"
           />
-          <input
-            type="datetime-local"
-            name="akadDateTime"
-            value={form.akadDateTime}
-            onChange={handleChange}
-            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent"
-          />
+          <div className="relative w-full mb-3">
+            <input
+              type="datetime-local"
+              name="akadDateTime"
+              value={form.akadDateTime}
+              onChange={handleChange}
+              className="w-full border-b border-gray-300 p-1 pr-10 bg-transparent"
+            />
+            <i className="ri-calendar-line absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg pointer-events-none" />
+          </div>
         </div>
 
         {/* Resepsi */}
@@ -200,13 +203,16 @@ export default function PersonalizePage() {
             placeholder="Contoh: Gedung Graha"
             className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent"
           />
-          <input
-            type="datetime-local"
-            name="resepsiDateTime"
-            value={form.resepsiDateTime}
-            onChange={handleChange}
-            className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent"
-          />
+          <div className="relative w-full mb-3">
+            <input
+              type="datetime-local"
+              name="resepsiDateTime"
+              value={form.resepsiDateTime}
+              onChange={handleChange}
+              className="w-full border-b border-gray-300 p-1 pr-10 bg-transparent"
+            />
+            <i className="ri-calendar-line absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg pointer-events-none" />
+          </div>
         </div>
 
         <button
