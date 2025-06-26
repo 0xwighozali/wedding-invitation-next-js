@@ -148,7 +148,7 @@ export default function PersonalizePage() {
             name="groomName"
             value={form.groomName}
             onChange={handleChange}
-            placeholder="Mempelai pria"
+            placeholder="Nama lengkap mempelai pria"
             className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
           />
           <div className="flex items-center gap-2 mb-3">
@@ -178,7 +178,7 @@ export default function PersonalizePage() {
             name="brideName"
             value={form.brideName}
             onChange={handleChange}
-            placeholder="Mempelai wanita"
+            placeholder="Nama lengkap mempelai wanita"
             className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
           />
           <div className="flex items-center gap-2 mb-3">
