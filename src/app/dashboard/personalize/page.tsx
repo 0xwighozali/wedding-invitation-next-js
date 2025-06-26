@@ -25,7 +25,9 @@ const bankOptions = [
 export default function PersonalizePage() {
   const [form, setForm] = useState({
     groomName: "",
+    groomIg: "",
     brideName: "",
+    brideIg: "",
     groomParents: "",
     brideParents: "",
     akadLocation: "",
@@ -139,7 +141,7 @@ export default function PersonalizePage() {
         {/* Mempelai */}
         <div>
           <label className="block mb-1 font-semibold text-gray-700">
-            Nama Mempelai
+            Nama Mempelai Pria
           </label>
           <input
             type="text"
@@ -149,6 +151,28 @@ export default function PersonalizePage() {
             placeholder="Mempelai pria"
             className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
           />
+          <div className="flex items-center gap-2 mb-3">
+            <div className="px-3 py-1 bg-gray-100 rounded shadow-sm text-base text-gray-600">
+              @
+            </div>
+            <input
+              type="text"
+              name="groomInstagram"
+              value={form.groomIg}
+              onChange={handleChange}
+              placeholder="Instagram"
+              className="w-full border-b border-gray-300 p-1 bg-transparent text-base"
+            />
+          </div>
+          <p className="text-xs text-gray-500 mt-1 mb-2">
+            Username instagram mempelai pria
+          </p>
+        </div>
+
+        <div>
+          <label className="block mb-1 font-semibold text-gray-700">
+            Nama Mempelai Wanita
+          </label>
           <input
             type="text"
             name="brideName"
@@ -157,6 +181,22 @@ export default function PersonalizePage() {
             placeholder="Mempelai wanita"
             className="w-full mb-3 border-b border-gray-300 p-1 bg-transparent text-base"
           />
+          <div className="flex items-center gap-2 mb-3">
+            <div className="px-3 py-1 bg-gray-100 rounded shadow-sm text-base text-gray-600">
+              @
+            </div>
+            <input
+              type="text"
+              name="groomInstagram"
+              value={form.groomIg}
+              onChange={handleChange}
+              placeholder="Instagram"
+              className="w-full border-b border-gray-300 p-1 bg-transparent text-base"
+            />
+          </div>
+          <p className="text-xs text-gray-500 mt-1 mb-2">
+            Username instagram mempelai wanita
+          </p>
         </div>
 
         {/* Orang Tua */}
@@ -273,9 +313,12 @@ export default function PersonalizePage() {
             name="websiteTitle"
             value={form.websiteTitle}
             onChange={handleChange}
-            placeholder="Contoh: Alwi, Kia"
+            placeholder="Contoh: Dilan, Milea"
             className="w-full mb-1 border-b border-gray-300 p-1 bg-transparent text-base"
           />
+          <p className="text-xs text-gray-500 mt-1">
+            Gunakan tanda koma (,) sebagai pemisah.
+          </p>
         </div>
 
         {/* URL */}
@@ -288,9 +331,12 @@ export default function PersonalizePage() {
             name="customUrl"
             value={form.customUrl}
             onChange={handleChange}
-            placeholder="Contoh: alwi-kia"
+            placeholder="Contoh: Dilan-Milea"
             className="w-full mb-1 border-b border-gray-300 p-1 bg-transparent text-base"
           />
+          <p className="text-xs text-gray-500 mt-1">
+            Domain: https://undanganmu.com/dilan-milea
+          </p>
         </div>
 
         {/* Upload Image Section */}
@@ -306,12 +352,22 @@ export default function PersonalizePage() {
             Foto Kedua Mempelai
           </label>
           <div className="grid grid-cols-2 gap-4">
-            {renderUploadBox(groomImage, setGroomImage, () =>
-              setGroomImage(null)
-            )}
-            {renderUploadBox(brideImage, setBrideImage, () =>
-              setBrideImage(null)
-            )}
+            <div>
+              {renderUploadBox(groomImage, setGroomImage, () =>
+                setGroomImage(null)
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                *Unggah foto mempelai pria.
+              </p>
+            </div>
+            <div>
+              {renderUploadBox(brideImage, setBrideImage, () =>
+                setBrideImage(null)
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                *Unggah foto mempelai pria.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -362,7 +418,7 @@ export default function PersonalizePage() {
           </label>
           <div className="space-y-4">
             {/* Bank 1 */}
-            <div className="bg-white p-4 rounded shadow-sm text-sm font-normal space-y-6">
+            <div className="bg-white p-4 rounded shadow-sm text-sm font-normal space-y-2">
               <label className="block mb-1">Bank 1</label>
               <ClientOnly>
                 <Select
@@ -392,7 +448,7 @@ export default function PersonalizePage() {
             </div>
 
             {/* Bank 2 */}
-            <div className="bg-white p-4 rounded shadow-sm text-sm font-normal space-y-6">
+            <div className="bg-white p-4 rounded shadow-sm text-sm font-normal space-y-2">
               <label className="block mb-1">Bank 2</label>
               <ClientOnly>
                 <Select
