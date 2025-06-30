@@ -3,28 +3,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 
+// Gunakan langsung destrukturisasi dari argumen kedua,
+// TAPI tanpa menuliskan tipe eksplisit untuk params
 export async function GET(
   req: NextRequest,
-  {
-    params,
-  }: {
-    params: { customUrlSlug: string; inviteCode: string };
-  }
+  context: { params: { customUrlSlug: string; inviteCode: string } } // INI YANG VALID
 ) {
+  const { customUrlSlug, inviteCode } = context.params;
+
+  if (!customUrlSlug || !inviteCode) {
+    return NextResponse.json(
+      {
+        message:
+          "URL tidak lengkap. Nama mempelai dan kode undangan diperlukan.",
+      },
+      { status: 400 }
+    );
+  }
+
   try {
-    const { customUrlSlug, inviteCode } = params;
-
-    if (!customUrlSlug || !inviteCode) {
-      return NextResponse.json(
-        {
-          message:
-            "URL tidak lengkap. Nama mempelai dan kode undangan diperlukan.",
-        },
-        { status: 400 }
-      );
-    }
-
-    // Ambil data personalisasi berdasarkan custom URL
+    // Ambil data personalize
     const personalizeResult = await pool.query(
       `SELECT
         id AS personalize_id,
@@ -66,7 +64,6 @@ export async function GET(
 
     const p = personalizeResult.rows[0];
 
-    // Ambil data tamu
     const guestResult = await pool.query(
       `SELECT id, name, code AS invite_code, address, invitation_type
        FROM guests
@@ -83,16 +80,6 @@ export async function GET(
 
     const g = guestResult.rows[0];
 
-    // Format tanggal
-    const akadDatetime =
-      p.akad_datetime instanceof Date
-        ? p.akad_datetime.toISOString()
-        : p.akad_datetime;
-    const resepsiDatetime =
-      p.resepsi_datetime instanceof Date
-        ? p.resepsi_datetime.toISOString()
-        : p.resepsi_datetime;
-
     return NextResponse.json({
       personalize_id: p.personalize_id,
       groom_name: p.groom_name,
@@ -103,10 +90,16 @@ export async function GET(
       bride_parents: p.bride_parents,
       akad_location: p.akad_location,
       akad_map: p.akad_map,
-      akad_datetime: akadDatetime,
+      akad_datetime:
+        p.akad_datetime instanceof Date
+          ? p.akad_datetime.toISOString()
+          : p.akad_datetime,
       resepsi_location: p.resepsi_location,
       resepsi_map: p.resepsi_map,
-      resepsi_datetime: resepsiDatetime,
+      resepsi_datetime:
+        p.resepsi_datetime instanceof Date
+          ? p.resepsi_datetime.toISOString()
+          : p.resepsi_datetime,
       website_title: p.website_title,
       custom_url: p.custom_url,
       bank1_name: p.bank1_name,
@@ -127,8 +120,8 @@ export async function GET(
         invitation_type: g.invitation_type,
       },
     });
-  } catch (error: any) {
-    console.error("API error:", error);
+  } catch (error) {
+    console.error("API Error:", error);
     return NextResponse.json(
       { message: "Terjadi kesalahan server saat memuat undangan." },
       { status: 500 }
