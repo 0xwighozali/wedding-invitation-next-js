@@ -1,10 +1,15 @@
 // src/app/api/[customUrlSlug]/[inviteCode]/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { customUrlSlug: string; inviteCode: string } }
+  {
+    params,
+  }: {
+    params: { customUrlSlug: string; inviteCode: string };
+  }
 ) {
   try {
     const { customUrlSlug, inviteCode } = params;
@@ -19,6 +24,7 @@ export async function GET(
       );
     }
 
+    // Ambil data personalisasi berdasarkan custom URL
     const personalizeResult = await pool.query(
       `SELECT
         id AS personalize_id,
@@ -60,6 +66,7 @@ export async function GET(
 
     const p = personalizeResult.rows[0];
 
+    // Ambil data tamu
     const guestResult = await pool.query(
       `SELECT id, name, code AS invite_code, address, invitation_type
        FROM guests
@@ -76,6 +83,16 @@ export async function GET(
 
     const g = guestResult.rows[0];
 
+    // Format tanggal
+    const akadDatetime =
+      p.akad_datetime instanceof Date
+        ? p.akad_datetime.toISOString()
+        : p.akad_datetime;
+    const resepsiDatetime =
+      p.resepsi_datetime instanceof Date
+        ? p.resepsi_datetime.toISOString()
+        : p.resepsi_datetime;
+
     return NextResponse.json({
       personalize_id: p.personalize_id,
       groom_name: p.groom_name,
@@ -86,16 +103,10 @@ export async function GET(
       bride_parents: p.bride_parents,
       akad_location: p.akad_location,
       akad_map: p.akad_map,
-      akad_datetime:
-        p.akad_datetime instanceof Date
-          ? p.akad_datetime.toISOString()
-          : p.akad_datetime,
+      akad_datetime: akadDatetime,
       resepsi_location: p.resepsi_location,
       resepsi_map: p.resepsi_map,
-      resepsi_datetime:
-        p.resepsi_datetime instanceof Date
-          ? p.resepsi_datetime.toISOString()
-          : p.resepsi_datetime,
+      resepsi_datetime: resepsiDatetime,
       website_title: p.website_title,
       custom_url: p.custom_url,
       bank1_name: p.bank1_name,
@@ -116,8 +127,8 @@ export async function GET(
         invitation_type: g.invitation_type,
       },
     });
-  } catch (err: any) {
-    console.error("API Error:", err);
+  } catch (error: any) {
+    console.error("API error:", error);
     return NextResponse.json(
       { message: "Terjadi kesalahan server saat memuat undangan." },
       { status: 500 }
