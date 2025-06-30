@@ -1,15 +1,12 @@
 // src/app/api/[customUrlSlug]/[inviteCode]/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 
-// Gunakan langsung destrukturisasi dari argumen kedua,
-// TAPI tanpa menuliskan tipe eksplisit untuk params
 export async function GET(
   req: NextRequest,
-  context: { params: { customUrlSlug: string; inviteCode: string } } // INI YANG VALID
+  { params }: any // ✅ Gunakan 'any' atau biarkan tanpa tipe eksplisit agar valid di Vercel
 ) {
-  const { customUrlSlug, inviteCode } = context.params;
+  const { customUrlSlug, inviteCode } = params;
 
   if (!customUrlSlug || !inviteCode) {
     return NextResponse.json(
@@ -22,7 +19,6 @@ export async function GET(
   }
 
   try {
-    // Ambil data personalize
     const personalizeResult = await pool.query(
       `SELECT
         id AS personalize_id,
@@ -120,7 +116,7 @@ export async function GET(
         invitation_type: g.invitation_type,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("API Error:", error);
     return NextResponse.json(
       { message: "Terjadi kesalahan server saat memuat undangan." },
