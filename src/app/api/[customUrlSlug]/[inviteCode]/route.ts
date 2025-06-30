@@ -1,18 +1,21 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db"; // Pastikan path ini benar
+import pool from "@/lib/db";
+
+// Perbarui definisi tipe untuk params
+interface RouteParams {
+  customUrlSlug: string;
+  inviteCode: string;
+}
 
 export async function GET(
   request: Request,
-  {
-    params, // Ambil objek params secara keseluruhan
-  }: {
-    params: { customUrlSlug: string; inviteCode: string };
-  }
+  // Perubahan di sini: Hanya perlu mendefinisikan tipe untuk 'params' itu sendiri
+  // dan pastikan itu di-destrukturisasi di dalam fungsi
+  context: { params: RouteParams } // Gunakan 'context' atau nama lain, lalu akses 'context.params'
 ) {
   try {
-    // --- PERBAIKAN DI SINI: Destrukturisasi params SETELAH di-await ---
-    const { customUrlSlug, inviteCode } = await params;
-    // --- AKHIR PERBAIKAN ---
+    // Kemudian, lakukan await dan destructuring
+    const { customUrlSlug, inviteCode } = await context.params;
 
     if (!customUrlSlug || !inviteCode) {
       return NextResponse.json(
@@ -23,6 +26,8 @@ export async function GET(
         { status: 400 }
       );
     }
+
+    // ... (sisa kode Anda)
 
     // Ambil data personalisasi berdasarkan custom URL
     const personalizeResult = await pool.query(
