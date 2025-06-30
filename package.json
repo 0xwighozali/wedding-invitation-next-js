@@ -9,18 +9,30 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.50.2",
+    "@vercel/postgres": "^0.10.0",
+    "bcrypt": "^6.0.0",
+    "formidable": "^3.5.4",
+    "jsonwebtoken": "^9.0.2",
     "next": "15.3.3",
+    "pg": "^8.16.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-select": "^5.10.1",
-    "remixicon": "^4.6.0"
+    "react-toastify": "^11.0.5",
+    "remixicon": "^4.6.0",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/bcrypt": "^5.0.2",
+    "@types/formidable": "^3.4.5",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "tailwindcss": "^4",
