@@ -1,17 +1,18 @@
 "use client";
 import { useState } from "react";
+import { toast } from "react-toastify"; // Pastikan Anda mengimpor toast
 
 interface GuestProps {
   index: number;
-  guestId: string; // 🆕 tambahkan ID tamu
+  guestId: string;
   name: string;
   phone: string;
   address: string;
   code?: string;
   invitation_type?: string;
-  rsvp_status?: string;
+  status?: string; // 🆕 Diubah dari rsvp_status menjadi status
   people_count?: number;
-  is_sent: boolean; // 🆕 properti baru
+  is_sent: boolean;
   onToggleSent: (newSent: boolean) => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -24,14 +25,59 @@ export default function GuestRow({
   phone,
   address,
   code,
-  invitation_type = "-",
-  rsvp_status = "-",
-  people_count = 0,
+  invitation_type = "-", // Default value
+  status = "-", // 🆕 Diubah dari rsvp_status, default value '-'
+  people_count = 0, // Default value
   is_sent,
   onToggleSent,
   onEdit,
   onDelete,
 }: GuestProps) {
+  const handleToggleSent = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newSent = e.target.checked;
+    try {
+      const response = await fetch("/api/guests", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: guestId, is_sent: newSent }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Gagal memperbarui status kirim.");
+      }
+
+      onToggleSent(newSent); // update state di parent (ini akan memicu refetch di dashboard)
+      toast.success(
+        `Status kirim untuk ${name} berhasil diubah menjadi ${
+          newSent ? "Sudah Dikirim" : "Belum Dikirim"
+        }!`,
+        { position: "top-center" }
+      );
+    } catch (err: any) {
+      console.error("Gagal update status kirim:", err);
+      toast.error(
+        err.message || "Terjadi kesalahan saat memperbarui status kirim.",
+        {
+          position: "top-center",
+        }
+      );
+    }
+  };
+
+  const formatPhoneNumberForWhatsApp = (num: string) => {
+    let cleaned = ("" + num).replace(/\D/g, "");
+    if (cleaned.startsWith("0")) {
+      cleaned = "62" + cleaned.substring(1);
+    } else if (!cleaned.startsWith("62") && cleaned.length > 5) {
+      // Hanya tambahkan 62 jika bukan 62 dan terlihat seperti nomor telpon valid
+      cleaned = "62" + cleaned;
+    }
+    return cleaned;
+  };
+
+  const whatsappLink = `https://wa.me/${formatPhoneNumberForWhatsApp(phone)}`;
+
   return (
     <tr className="border-b border-gray-200">
       {/* Index */}
@@ -39,23 +85,7 @@ export default function GuestRow({
 
       {/* Checkbox - Kirim */}
       <td className="px-2 py-4 text-center">
-        <input
-          type="checkbox"
-          checked={is_sent}
-          onChange={async (e) => {
-            const newSent = e.target.checked;
-            try {
-              await fetch("/api/guests", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id: guestId, is_sent: newSent }),
-              });
-              onToggleSent(newSent); // update state di parent
-            } catch (err) {
-              console.error("Gagal update status kirim:", err);
-            }
-          }}
-        />
+        <input type="checkbox" checked={is_sent} onChange={handleToggleSent} />
       </td>
 
       {/* Detail Utama */}
@@ -97,7 +127,9 @@ export default function GuestRow({
             <div>
               <i className="ri-checkbox-circle-line mr-1 text-gray-500" />
               Kehadiran:{" "}
-              <span className="italic capitalize">{rsvp_status}</span>
+              <span className="italic capitalize">
+                {status === "-" ? "Belum Konfirmasi" : status}
+              </span>
             </div>
             <div>
               <i className="ri-group-line mr-1 text-gray-500" />
@@ -113,20 +145,23 @@ export default function GuestRow({
           <button
             onClick={onEdit}
             className="text-blue-500 hover:text-blue-700"
+            aria-label="Edit Guest"
           >
             <i className="ri-edit-2-line" />
           </button>
           <button
             onClick={onDelete}
             className="text-red-500 hover:text-red-700"
+            aria-label="Delete Guest"
           >
             <i className="ri-delete-bin-line" />
           </button>
           <a
-            href={`https://wa.me/${phone}`}
+            href={whatsappLink}
             target="_blank"
             rel="noopener noreferrer"
             className="text-green-500 hover:text-green-700"
+            aria-label="Send WhatsApp Message"
           >
             <i className="ri-whatsapp-line" />
           </a>

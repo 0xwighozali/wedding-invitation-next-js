@@ -1,9 +1,9 @@
 // src/app/dashboard/page.tsx
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import StatCard from "@/components/StatCard"; // Pastikan path ini benar
-import GuestRow from "@/components/GuestRow"; // Pastikan path ini benar
+import { useEffect, useRef, useState, useCallback } from "react"; // Tambahkan useCallback
+import StatCard from "@/components/StatCard";
+import GuestRow from "@/components/GuestRow";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useRouter } from "next/navigation";
@@ -37,8 +37,8 @@ export default function DashboardPage() {
   const [selectedGuestIndex, setSelectedGuestIndex] = useState<number | null>(
     null
   );
-  const [userId, setUserId] = useState<string | null>(null); // userId dari tabel users
-  const [personalizeId, setPersonalizeId] = useState<string | null>(null); // <-- personalizeId dari tabel personalize
+  // userId tidak digunakan di frontend untuk fetching tamu, hanya personalizeId yang diperlukan untuk otorisasi
+  const [personalizeId, setPersonalizeId] = useState<string | null>(null);
   const [loadingGuests, setLoadingGuests] = useState(true);
   const [dashboardStats, setDashboardStats] = useState(initialStats);
 
@@ -61,71 +61,36 @@ export default function DashboardPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // --- Effect 1: Ambil ID Pengguna dan Personalize ID dari Sesi saat Komponen Dimuat ---
-  useEffect(() => {
-    const fetchUserSession = async () => {
-      try {
-        const res = await fetch("/api/auth/session");
-        const data = await res.json();
-
-        if (res.ok && data.isAuthenticated && data.user.personalizeId) {
-          setUserId(data.user.id);
-          setPersonalizeId(data.user.personalizeId); // <-- Set personalizeId di state
-        } else {
-          toast.error("Anda harus login untuk mengakses dashboard.", {
-            position: "top-center",
-            autoClose: 3000,
-            theme: "colored",
-          });
-          router.push("/login");
-        }
-      } catch (error) {
-        console.error("Error fetching user session:", error);
-        toast.error("Gagal memuat sesi pengguna. Silakan login ulang.", {
-          position: "top-center",
-          autoClose: 3000,
-          theme: "colored",
-        });
-        router.push("/login");
-      }
-    };
-
-    fetchUserSession();
-  }, [router]);
-
-  // --- Effect 2: Fetch Data Tamu berdasarkan personalizeId ---
-  useEffect(() => {
-    if (!personalizeId) {
-      // <-- Gunakan personalizeId di sini
-      setLoadingGuests(false);
-      return;
-    }
-
-    const fetchGuests = async () => {
+  // --- Fungsi untuk mengambil dan memperbarui tamu serta statistik ---
+  const fetchAndSetGuestsAndStats = useCallback(
+    async (currentPersonalizeId: string) => {
       setLoadingGuests(true);
       try {
-        const res = await fetch(`/api/guests?personalize_id=${personalizeId}`); // <-- Kirim personalizeId sebagai query param
+        const res = await fetch(
+          `/api/guests?personalize_id=${currentPersonalizeId}`
+        );
         const data = await res.json();
 
         if (res.ok) {
           const fetchedGuests = data.guests.map((guest: any) => ({
             ...guest,
-            sent: guest.code?.startsWith("INV"),
-            rsvp_status: guest.rsvp_status || "-",
+            // Pastikan nilai default jika null/undefined dari backend
+            status: guest.status || "-", // Akan menjadi '-' jika tidak ada RSVP
             people_count: guest.people_count || 0,
-            is_sent: guest.is_sent || false,
+            is_sent: guest.is_sent || false, // Pastikan is_sent boolean
           }));
           setGuests(fetchedGuests);
 
+          // Hitung statistik berdasarkan fetchedGuests terbaru
           const totalGuests = fetchedGuests.length;
           const sentInvitations = fetchedGuests.filter(
             (g: any) => g.is_sent
           ).length;
           const rsvpConfirmed = fetchedGuests.filter(
-            (g: any) => g.rsvp_status && g.rsvp_status !== "-"
+            (g: any) => g.status && g.status !== "-" // RSVP dianggap masuk jika ada status selain '-'
           ).length;
           const hadirCount = fetchedGuests.filter(
-            (g: any) => g.rsvp_status === "hadir"
+            (g: any) => g.status === "hadir"
           ).length;
 
           setDashboardStats([
@@ -149,58 +114,45 @@ export default function DashboardPage() {
       } finally {
         setLoadingGuests(false);
       }
+    },
+    []
+  ); // Tidak ada dependency karena menggunakan parameter currentPersonalizeId
+
+  // --- Effect 1: Ambil Personalize ID dari Sesi saat Komponen Dimuat ---
+  useEffect(() => {
+    const fetchUserSession = async () => {
+      try {
+        const res = await fetch("/api/auth/session");
+        const data = await res.json();
+
+        if (res.ok && data.isAuthenticated && data.user.personalizeId) {
+          // setUserId(data.user.id); // userId tidak diperlukan di frontend untuk operasi tamu
+          setPersonalizeId(data.user.personalizeId);
+          // Setelah personalizeId didapatkan, panggil fungsi untuk mengambil tamu
+          fetchAndSetGuestsAndStats(data.user.personalizeId);
+        } else {
+          toast.error("Anda harus login untuk mengakses dashboard.", {
+            position: "top-center",
+            autoClose: 3000,
+            theme: "colored",
+          });
+          router.push("/login");
+        }
+      } catch (error) {
+        console.error("Error fetching user session:", error);
+        toast.error("Gagal memuat sesi pengguna. Silakan login ulang.", {
+          position: "top-center",
+          autoClose: 3000,
+          theme: "colored",
+        });
+        router.push("/login");
+      }
     };
 
-    fetchGuests();
-  }, [personalizeId]); // <-- Dependency diubah ke personalizeId
+    fetchUserSession();
+  }, [router, fetchAndSetGuestsAndStats]); // Tambahkan fetchAndSetGuestsAndStats sebagai dependency
 
-  const fetchGuestsBasedOnUserId = async (currentPersonalizeId: string) => {
-    // <-- Ubah parameter
-    setLoadingGuests(true);
-    try {
-      const res = await fetch(
-        `/api/guests?personalize_id=${currentPersonalizeId}`
-      ); // <-- Gunakan currentPersonalizeId
-      const data = await res.json();
-      if (res.ok) {
-        const fetchedGuests = data.guests.map((guest: any) => ({
-          ...guest,
-          sent: guest.code?.startsWith("INV"),
-          rsvp_status: guest.rsvp_status || "-",
-          people_count: guest.people_count || 0,
-          is_sent: guest.is_sent || false,
-        }));
-        setGuests(fetchedGuests);
-
-        const totalGuests = fetchedGuests.length;
-        const sentInvitations = fetchedGuests.filter(
-          (g: any) => g.is_sent
-        ).length;
-        const rsvpConfirmed = fetchedGuests.filter(
-          (g: any) => g.rsvp_status && g.rsvp_status !== "-"
-        ).length;
-        const hadirCount = fetchedGuests.filter(
-          (g: any) => g.rsvp_status === "hadir"
-        ).length;
-
-        setDashboardStats([
-          { ...initialStats[0], value: totalGuests.toString() },
-          { ...initialStats[1], value: sentInvitations.toString() },
-          { ...initialStats[2], value: rsvpConfirmed.toString() },
-          { ...initialStats[3], value: hadirCount.toString() },
-        ]);
-      } else {
-        toast.error(
-          `Gagal memuat ulang data tamu: ${data.error || "Terjadi kesalahan"}`
-        );
-      }
-    } catch (err) {
-      console.error("Error refetching guests:", err);
-      toast.error("Gagal terhubung ke server untuk memuat ulang data tamu.");
-    } finally {
-      setLoadingGuests(false);
-    }
-  };
+  // Filter logika sudah benar, tidak perlu diubah
 
   const filteredGuests = guests.filter((g) => {
     const nameMatch = g.name.toLowerCase().includes(search.toLowerCase());
@@ -213,8 +165,7 @@ export default function DashboardPage() {
       filterType.length === 0 || filterType.includes(g.invitation_type);
 
     const rsvpMatch =
-      filterRSVP.length === 0 ||
-      filterRSVP.includes(g.rsvp_status?.toLowerCase());
+      filterRSVP.length === 0 || filterRSVP.includes(g.status?.toLowerCase());
 
     return nameMatch && sentMatch && typeMatch && rsvpMatch;
   });
@@ -250,12 +201,15 @@ export default function DashboardPage() {
       !addForm.address ||
       !addForm.invitation_type
     ) {
-      toast.warn("Gagal menambahkan tamu: Pastikan semua kolom terisi.");
+      toast.warn("Gagal menambahkan tamu: Pastikan semua kolom terisi.", {
+        position: "top-center",
+      });
       return;
     }
     if (!personalizeId) {
-      // <-- Gunakan personalizeId di sini
-      toast.error("Sesi personalisasi tidak valid. Silakan login ulang.");
+      toast.error("Sesi personalisasi tidak valid. Silakan login ulang.", {
+        position: "top-center",
+      });
       router.push("/login");
       return;
     }
@@ -266,57 +220,66 @@ export default function DashboardPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...addForm,
-          personalize_id: personalizeId, // <-- Kirim personalizeId
+          personalize_id: personalizeId,
         }),
       });
 
       const data = await res.json();
       if (res.ok) {
-        setGuests((prev) => [
-          ...prev,
-          {
-            ...data.guest,
-            sent: !!data.guest.code,
-            is_sent: !!data.guest.code,
-          },
-        ]);
+        setShowAddModal(false);
+        toast.success("Tamu berhasil ditambahkan!", {
+          position: "top-center",
+        });
+        // Setelah berhasil, panggil ulang untuk memperbarui daftar dan statistik
+        fetchAndSetGuestsAndStats(personalizeId);
         setAddForm({
           name: "",
           phone: "",
           address: "",
           invitation_type: "personal",
-        });
-        setShowAddModal(false);
-        toast.success("Tamu berhasil ditambahkan!");
-        fetchGuestsBasedOnUserId(personalizeId); // <-- Panggil dengan personalizeId
+        }); // Reset form setelah sukses
       } else {
         toast.error(
-          `Gagal menambahkan tamu: ${data.error || "Terjadi kesalahan"}`
+          `Gagal menambahkan tamu: ${data.error || "Terjadi kesalahan"}`,
+          { position: "top-center" }
         );
       }
     } catch (err) {
       console.error(err);
-      toast.error("Gagal menyimpan tamu. Silakan coba lagi.");
+      toast.error("Gagal menyimpan tamu. Silakan coba lagi.", {
+        position: "top-center",
+      });
     }
   };
 
   const handleEdit = async () => {
     if (selectedGuestIndex === null) return;
     if (!personalizeId) {
-      // <-- Gunakan personalizeId di sini
-      toast.error("Sesi personalisasi tidak valid. Silakan login ulang.");
+      toast.error("Sesi personalisasi tidak valid. Silakan login ulang.", {
+        position: "top-center",
+      });
       router.push("/login");
       return;
     }
 
-    const guest = guests[selectedGuestIndex];
+    const guestToUpdate = filteredGuests[selectedGuestIndex]; // Pastikan mengedit dari filteredGuests
+    const originalGuestIndex = guests.findIndex(
+      (g) => g.id === guestToUpdate.id
+    ); // Cari index asli di `guests`
+
+    if (originalGuestIndex === -1) {
+      // Safety check
+      toast.error("Tamu tidak ditemukan.", { position: "top-center" });
+      return;
+    }
+
     const updatedData = {
-      id: guest.id,
+      id: guestToUpdate.id, // Gunakan ID dari guest yang dipilih
       name: editForm.name,
       phone: editForm.phone,
       address: editForm.address,
       invitation_type: editForm.invitation_type,
-      personalize_id: personalizeId, // <-- Kirim personalizeId
+      personalize_id: personalizeId,
     };
 
     try {
@@ -327,36 +290,38 @@ export default function DashboardPage() {
       });
 
       if (res.ok) {
-        const updatedGuests = [...guests];
-        updatedGuests[selectedGuestIndex] = {
-          ...updatedGuests[selectedGuestIndex],
-          ...updatedData,
-        };
-        setGuests(updatedGuests);
         setShowEditModal(false);
-        toast.success("Tamu berhasil diperbarui!");
+        toast.success("Tamu berhasil diperbarui!", {
+          position: "top-center",
+        });
+        // Setelah berhasil, panggil ulang untuk memperbarui daftar dan statistik
+        fetchAndSetGuestsAndStats(personalizeId);
       } else {
         const data = await res.json();
         toast.error(
-          `Gagal memperbarui tamu: ${data.error || "Terjadi kesalahan"}`
+          `Gagal memperbarui tamu: ${data.error || "Terjadi kesalahan"}`,
+          { position: "top-center" }
         );
       }
     } catch (err) {
       console.error("Gagal update tamu:", err);
-      toast.error("Gagal memperbarui tamu. Silakan coba lagi.");
+      toast.error("Gagal memperbarui tamu. Silakan coba lagi.", {
+        position: "top-center",
+      });
     }
   };
 
   const handleDelete = async () => {
     if (selectedGuestIndex === null) return;
     if (!personalizeId) {
-      // <-- Gunakan personalizeId di sini
-      toast.error("Sesi personalisasi tidak valid. Silakan login ulang.");
+      toast.error("Sesi personalisasi tidak valid. Silakan login ulang.", {
+        position: "top-center",
+      });
       router.push("/login");
       return;
     }
 
-    const guestToDelete = guests[selectedGuestIndex];
+    const guestToDelete = filteredGuests[selectedGuestIndex]; // Pastikan menghapus dari filteredGuests
 
     try {
       const res = await fetch("/api/guests", {
@@ -365,52 +330,66 @@ export default function DashboardPage() {
         body: JSON.stringify({
           id: guestToDelete.id,
           personalize_id: personalizeId,
-        }), // <-- Kirim personalizeId
+        }),
       });
 
       if (res.ok) {
-        setGuests((prev) => prev.filter((_, i) => i !== selectedGuestIndex));
         setShowDeleteModal(false);
-        toast.success("Tamu berhasil dihapus!");
-        fetchGuestsBasedOnUserId(personalizeId); // <-- Panggil dengan personalizeId
+        toast.success("Tamu berhasil dihapus!", {
+          position: "top-center",
+        });
+        // Setelah berhasil, panggil ulang untuk memperbarui daftar dan statistik
+        fetchAndSetGuestsAndStats(personalizeId);
       } else {
         const data = await res.json();
         toast.error(
-          `Gagal menghapus tamu: ${data.error || "Terjadi kesalahan"}`
+          `Gagal menghapus tamu: ${data.error || "Terjadi kesalahan"}`,
+          { position: "top-center" }
         );
       }
     } catch (err) {
       console.error("Gagal hapus tamu:", err);
-      toast.error("Terjadi kesalahan saat menghapus tamu. Silakan coba lagi.");
+      toast.error("Terjadi kesalahan saat menghapus tamu. Silakan coba lagi.", {
+        position: "top-center",
+      });
     }
   };
 
-  const handleToggleSent = async (index: number, newSent: boolean) => {
+  const handleToggleSent = async (globalIndex: number, newSent: boolean) => {
     if (!personalizeId) {
-      // <-- Gunakan personalizeId di sini
-      toast.error("Sesi personalisasi tidak valid. Silakan login ulang.");
+      toast.error("Sesi personalisasi tidak valid. Silakan login ulang.", {
+        position: "top-center",
+      });
       router.push("/login");
       return;
     }
     try {
-      const guest = guests[index];
+      // Temukan tamu berdasarkan ID karena indeks bisa berubah saat filtering/pagination
+      const guestToUpdate = guests[globalIndex];
+      if (!guestToUpdate) {
+        toast.error("Tamu tidak ditemukan untuk diperbarui.", {
+          position: "top-center",
+        });
+        return;
+      }
+
       const res = await fetch("/api/guests", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: guest.id,
+          id: guestToUpdate.id,
           is_sent: newSent,
           personalize_id: personalizeId,
-        }), // <-- Kirim personalizeId
+        }),
       });
 
       if (res.ok) {
-        const updated = [...guests];
-        updated[index].is_sent = newSent;
-        updated[index].sent = newSent;
-        setGuests(updated);
-        toast.info("Status kirim undangan diperbarui.");
-        fetchGuestsBasedOnUserId(personalizeId); // <-- Panggil dengan personalizeId
+        toast.info(
+          `Status kirim undangan untuk ${guestToUpdate.name} diperbarui.`,
+          { position: "top-center" }
+        );
+        // Setelah berhasil, panggil ulang untuk memperbarui daftar dan statistik
+        fetchAndSetGuestsAndStats(personalizeId);
       } else {
         const data = await res.json();
         toast.error(
@@ -419,7 +398,9 @@ export default function DashboardPage() {
       }
     } catch (error) {
       console.error("Error updating sent status:", error);
-      toast.error("Gagal memperbarui status kirim.");
+      toast.error("Gagal memperbarui status kirim.", {
+        position: "top-center",
+      });
     }
   };
 
@@ -450,17 +431,18 @@ export default function DashboardPage() {
       );
     };
 
-    const maxVisible = 8;
+    const maxVisible = 8; // Jumlah maksimum tombol halaman yang terlihat
 
     if (totalPages <= maxVisible) {
       for (let i = 1; i <= totalPages; i++) addPage(i);
     } else {
+      // Logika paginasi yang lebih kompleks untuk banyak halaman
       if (currentPage <= 4) {
         for (let i = 1; i <= 5; i++) addPage(i);
         addEllipsis("right");
-        for (let i = totalPages - 2; i <= totalPages; i++) addPage(i);
+        for (let i = totalPages - 1; i <= totalPages; i++) addPage(i); // Hanya 2 halaman terakhir
       } else if (currentPage >= totalPages - 3) {
-        for (let i = 1; i <= 3; i++) addPage(i);
+        for (let i = 1; i <= 2; i++) addPage(i); // Hanya 2 halaman pertama
         addEllipsis("left");
         for (let i = totalPages - 4; i <= totalPages; i++) addPage(i);
       } else {
@@ -606,7 +588,7 @@ export default function DashboardPage() {
     setShowDeleteModal(true);
   };
 
-  // <-- Ubah pengecekan ini dari userId ke personalizeId
+  // UI loading state berdasarkan personalizeId dan loadingGuests
   if (!personalizeId && loadingGuests) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -615,7 +597,7 @@ export default function DashboardPage() {
     );
   }
 
-  // <-- Ubah pengecekan ini dari userId ke personalizeId
+  // UI redirecting state jika personalizeId tidak ada setelah loading
   if (!personalizeId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -831,17 +813,19 @@ export default function DashboardPage() {
                       address={g.address}
                       code={g.code}
                       invitation_type={g.invitation_type}
-                      rsvp_status={g.rsvp_status}
+                      status={g.status}
                       people_count={g.people_count}
                       is_sent={g.is_sent}
-                      onToggleSent={(newSent) =>
+                      // onToggleSent sekarang langsung memanggil fetchAndSetGuestsAndStats
+                      onToggleSent={() =>
                         handleToggleSent(
-                          (currentPage - 1) * itemsPerPage + i,
-                          newSent
+                          guests.findIndex((guest) => guest.id === g.id), // Cari index di `guests` array penuh
+                          !g.is_sent
                         )
                       }
                       onEdit={() => {
                         setSelectedGuestIndex(
+                          // Set selectedGuestIndex ke index di filteredGuests
                           (currentPage - 1) * itemsPerPage + i
                         );
                         setEditForm({
@@ -907,14 +891,14 @@ export default function DashboardPage() {
       <ToastContainer
         position="top-right"
         autoClose={5000}
-        hideProgressBar={false}
+        hideProgressBar={false} // PERBAIKAN: Gunakan hideProgressBar
         newestOnTop={false}
         closeOnClick
         rtl={false}
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        theme="colored"
+        theme="light"
       />
     </div>
   );

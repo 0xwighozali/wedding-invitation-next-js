@@ -1,6 +1,6 @@
 // src/app/api/guests/route.ts
 import { NextResponse } from "next/server";
-import sql from "@/lib/db";
+import pool from "@/lib/db"; // Pastikan ini mengimpor pool
 import { v4 as uuidv4 } from "uuid";
 import { cookies } from "next/headers";
 import jwt from "jsonwebtoken";
@@ -22,19 +22,18 @@ const getPersonalizeIdFromAuthToken = async () => {
 
   try {
     const decoded: any = jwt.verify(token, secret);
-    return decoded.personalizeId; // <-- Ambil personalizeId dari token
+    return decoded.personalizeId;
   } catch (error) {
     console.error("Failed to verify auth token:", error);
     return null;
   }
 };
 
-// --- GET Request: Ambil semua tamu berdasarkan personalize_id ---
+// --- GET Request: Ambil semua tamu dengan data RSVP terkait ---
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const personalizeId = searchParams.get("personalize_id"); // Ambil personalize_id dari query param
+  const personalizeId = searchParams.get("personalize_id");
 
-  // 1. Pastikan personalize_id disediakan oleh klien
   if (!personalizeId) {
     return NextResponse.json(
       {
@@ -45,27 +44,43 @@ export async function GET(req: Request) {
     );
   }
 
-  // 2. Verifikasi otorisasi: Pastikan personalize_id yang diminta cocok dengan yang ada di token
-  const authorizedPersonalizeId = await getPersonalizeIdFromAuthToken(); // <-- Gunakan fungsi helper yang baru
+  const authorizedPersonalizeId = await getPersonalizeIdFromAuthToken();
   if (!authorizedPersonalizeId || authorizedPersonalizeId !== personalizeId) {
     return NextResponse.json(
       {
         success: false,
         error: "Unauthorized access or invalid personalize ID.",
       },
-      { status: 403 } // Forbidden
+      { status: 403 }
     );
   }
 
   try {
-    // Query database hanya untuk tamu dengan personalize_id yang sesuai
-    const result = await sql.query(
-      "SELECT * FROM guests WHERE personalize_id = $1 ORDER BY created_at DESC",
+    // MODIFIKASI: Lakukan LEFT JOIN dengan tabel rsvp_responses
+    const result = await pool.query(
+      `SELECT
+        g.id,
+        g.name,
+        g.phone,
+        g.address,
+        g.code,
+        g.invitation_type,
+        g.is_sent,
+        COALESCE(r.status, '-') AS status, -- Ambil status dari rsvp, default '-'
+        COALESCE(r.people_count, 0) AS people_count -- Ambil people_count dari rsvp, default 0
+      FROM
+        guests g
+      LEFT JOIN
+        rsvp r ON g.id = r.guest_id -- ASUMSI: Nama tabel RSVP Anda adalah rsvp_responses
+      WHERE
+        g.personalize_id = $1
+      ORDER BY
+        g.created_at DESC`,
       [personalizeId]
     );
     return NextResponse.json({ success: true, guests: result.rows });
   } catch (error) {
-    console.error("Error fetching guests:", error);
+    console.error("Error fetching guests with RSVP data:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch guests due to server error." },
       { status: 500 }
@@ -77,10 +92,9 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, phone, address, invitation_type, personalize_id } = body; // personalize_id dari body
+    const { name, phone, address, invitation_type, personalize_id } = body;
 
-    // 1. Verifikasi otorisasi: Pastikan personalize_id yang dikirim cocok dengan yang ada di token
-    const authorizedPersonalizeId = await getPersonalizeIdFromAuthToken(); // <-- Gunakan fungsi helper yang baru
+    const authorizedPersonalizeId = await getPersonalizeIdFromAuthToken();
     if (
       !authorizedPersonalizeId ||
       authorizedPersonalizeId !== personalize_id
@@ -94,7 +108,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Validasi input dasar
     if (!name || !personalize_id) {
       return NextResponse.json(
         {
@@ -106,9 +119,9 @@ export async function POST(req: Request) {
     }
 
     const guestId = uuidv4();
-    const invitationCode = `INV-${uuidv4().substring(0, 8).toUpperCase()}`; // Contoh kode undangan
+    const invitationCode = `INV-${uuidv4().substring(0, 8).toUpperCase()}`;
 
-    const result = await sql.query(
+    const result = await pool.query(
       `INSERT INTO guests (id, personalize_id, name, phone, address, invitation_type, code, created_at, updated_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW()) RETURNING *`,
       [
@@ -121,6 +134,13 @@ export async function POST(req: Request) {
         invitationCode,
       ]
     );
+
+    // Ketika tamu baru ditambahkan, kita harus memastikan dia juga memiliki status RSVP awal.
+    // Jika tabel rsvp_responses akan selalu memiliki entri untuk setiap tamu,
+    // maka Anda mungkin ingin menambahkan entri default di sini.
+    // Namun, jika RSVP hanya ditambahkan saat tamu merespons, maka tidak perlu insert di sini.
+    // Untuk tujuan ini, kita asumsikan RSVP hanya masuk ketika tamu merespons.
+    // Dashboard akan menampilkan '-' jika belum ada RSVP.
 
     return NextResponse.json({ success: true, guest: result.rows[0] });
   } catch (error) {
@@ -144,9 +164,11 @@ export async function PATCH(req: Request) {
       invitation_type,
       is_sent,
       personalize_id,
+      // TAMBAHAN: izinkan update status dan people_count jika diperlukan dari API ini
+      // status,
+      // people_count
     } = body;
 
-    // 1. Verifikasi otorisasi
     const authorizedPersonalizeId = await getPersonalizeIdFromAuthToken();
     if (
       !authorizedPersonalizeId ||
@@ -161,7 +183,6 @@ export async function PATCH(req: Request) {
       );
     }
 
-    // 2. Validasi ID tamu
     if (!id) {
       return NextResponse.json(
         { success: false, error: "Guest ID is required for updating." },
@@ -201,7 +222,7 @@ export async function PATCH(req: Request) {
     )} WHERE id = $${queryIndex++} AND personalize_id = $${queryIndex++} RETURNING *`;
     values.push(id, personalize_id);
 
-    const result = await sql.query(query, values);
+    const result = await pool.query(query, values);
 
     if (result.rows.length === 0) {
       return NextResponse.json(
@@ -213,6 +234,31 @@ export async function PATCH(req: Request) {
       );
     }
 
+    // Jika Anda juga ingin mengupdate status RSVP dari API ini (misal dari dashboard),
+    // Anda perlu logika INSERT/UPDATE ke tabel rsvp_responses juga.
+    // Untuk saat ini, kita hanya mengupdate tabel guests.
+    // Jika `status` atau `people_count` dikirim, Anda perlu menanganinya di sini
+    // dengan INSERT INTO atau UPDATE rsvp_responses.
+    // Misalnya:
+    /*
+    if (status !== undefined || people_count !== undefined) {
+      // Logic untuk upsert rsvp_responses
+      await pool.query(
+        `INSERT INTO rsvp_responses (guest_id, status, people_count, created_at)
+         VALUES ($1, $2, $3, NOW())
+         ON CONFLICT (guest_id) DO UPDATE SET
+           status = EXCLUDED.status,
+           people_count = EXCLUDED.people_count,
+           updated_at = NOW()`,
+        [id, status || result.rows[0].status, people_count || result.rows[0].people_count] // Ambil nilai yang ada jika tidak disediakan
+      );
+    }
+    */
+
+    // Jika Anda ingin mengembalikan data RSVP yang diperbarui juga,
+    // Anda harus melakukan SELECT ulang atau JOIN serupa dengan GET.
+    // Untuk kemudahan, kita asumsikan frontend akan memanggil refetchGuests
+    // yang akan mendapatkan data terbaru.
     return NextResponse.json({ success: true, guest: result.rows[0] });
   } catch (error) {
     console.error("Error updating guest:", error);
@@ -229,7 +275,6 @@ export async function DELETE(req: Request) {
     const body = await req.json();
     const { id, personalize_id } = body;
 
-    // 1. Verifikasi otorisasi
     const authorizedPersonalizeId = await getPersonalizeIdFromAuthToken();
     if (
       !authorizedPersonalizeId ||
@@ -244,7 +289,6 @@ export async function DELETE(req: Request) {
       );
     }
 
-    // 2. Validasi ID tamu
     if (!id) {
       return NextResponse.json(
         { success: false, error: "Guest ID is required for deletion." },
@@ -252,7 +296,13 @@ export async function DELETE(req: Request) {
       );
     }
 
-    const result = await sql.query(
+    // Penting: Jika ada foreign key constraint, Anda mungkin perlu
+    // menghapus entri di rsvp_responses terlebih dahulu atau memiliki
+    // CASCADE DELETE di foreign key constraint Anda.
+    // Contoh DELETE rsvp_responses:
+    await pool.query("DELETE FROM rsvp_responses WHERE guest_id = $1", [id]); // Hapus RSVP terkait dulu
+
+    const result = await pool.query(
       "DELETE FROM guests WHERE id = $1 AND personalize_id = $2 RETURNING id",
       [id, personalize_id]
     );

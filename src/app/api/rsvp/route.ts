@@ -6,17 +6,12 @@ export async function POST(request: Request) {
     const { customUrlSlug, inviteCode, status, people_count } =
       await request.json();
 
-    // Validasi input dasar
-    if (
-      !customUrlSlug ||
-      !inviteCode ||
-      !status ||
-      (status === "hadir" && (people_count === undefined || people_count < 1))
-    ) {
+    // --- 1. Validasi Input Dasar dan Status ---
+    // Pastikan semua input dasar ada
+    if (!customUrlSlug || !inviteCode || !status) {
       return NextResponse.json(
         {
-          message:
-            "Data RSVP tidak lengkap (URL, kode undangan, status, atau jumlah tamu).",
+          message: "Data RSVP tidak lengkap (URL, kode undangan, atau status).",
         },
         { status: 400 }
       );
@@ -25,17 +20,39 @@ export async function POST(request: Request) {
     // Pastikan status hanya 'hadir' atau 'tidak hadir'
     if (!["hadir", "tidak hadir"].includes(status)) {
       return NextResponse.json(
-        { message: "Status RSVP tidak valid." },
+        {
+          message:
+            "Status RSVP tidak valid. Hanya 'hadir' atau 'tidak hadir' yang diperbolehkan.",
+        },
         { status: 400 }
       );
     }
 
-    // Cari guest_id berdasarkan inviteCode dan customUrlSlug
-    // personalize_id hanya akan digunakan untuk validasi, tidak disimpan di tabel rsvp
+    // --- 2. Tentukan Final people_count Berdasarkan Status ---
+    let finalPeopleCount: number;
+
+    if (status === "tidak hadir") {
+      finalPeopleCount = 0; // PENTING: Jika status 'tidak hadir', people_count harus 0
+    } else {
+      // Jika status 'hadir'
+      // Validasi people_count untuk status 'hadir'
+      if (people_count === undefined || people_count < 1) {
+        // Jika people_count tidak valid untuk status 'hadir', default ke 1
+        finalPeopleCount = 1;
+        console.warn(
+          `[RSVP API] people_count tidak valid untuk status 'hadir', default ke 1. Payload: ${JSON.stringify(
+            { customUrlSlug, inviteCode, status, people_count }
+          )}`
+        );
+      } else {
+        finalPeopleCount = people_count;
+      }
+    }
+
+    // --- 3. Cari guest_id berdasarkan inviteCode dan customUrlSlug ---
     const guestDataResult = await pool.query(
       `SELECT
-         g.id as guest_id,
-         p.id as personalize_id -- tetap ambil personalize_id untuk validasi
+         g.id as guest_id
        FROM guests g
        JOIN personalize p ON g.personalize_id = p.id
        WHERE g.code = $1 AND p.custom_url = $2`,
@@ -49,42 +66,33 @@ export async function POST(request: Request) {
       );
     }
 
-    const { guest_id } = guestDataResult.rows[0]; // Hanya ambil guest_id
+    const { guest_id } = guestDataResult.rows[0];
 
-    // Periksa apakah tamu sudah RSVP sebelumnya
-    const existingRsvp = await pool.query(
-      "SELECT id FROM rsvp WHERE guest_id = $1",
-      [guest_id]
+    // --- 4. Gunakan UPSERT (INSERT ... ON CONFLICT) untuk menyederhanakan logika ---
+    // Ini lebih efisien daripada SELECT terpisah lalu INSERT/UPDATE
+    const upsertQuery = `
+      INSERT INTO rsvp (guest_id, status, people_count, created_at, updated_at)
+      VALUES ($1, $2, $3, NOW(), NOW())
+      ON CONFLICT (guest_id) DO UPDATE SET
+        status = EXCLUDED.status,
+        people_count = EXCLUDED.people_count,
+        updated_at = NOW()
+      RETURNING *;
+    `;
+
+    await pool.query(upsertQuery, [guest_id, status, finalPeopleCount]);
+
+    return NextResponse.json(
+      { message: "RSVP berhasil dikirim/diperbarui!" },
+      { status: 200 }
     );
-
-    if (existingRsvp.rows.length > 0) {
-      // Jika tamu sudah RSVP, update data yang ada
-      await pool.query(
-        `UPDATE rsvp
-         SET status = $1, people_count = $2, created_at = NOW()
-         WHERE guest_id = $3`,
-        [status, people_count, guest_id]
-      );
-      return NextResponse.json(
-        { message: "RSVP berhasil diperbarui!" },
-        { status: 200 }
-      );
-    } else {
-      // Jika tamu belum RSVP, masukkan data baru
-      await pool.query(
-        `INSERT INTO rsvp (guest_id, status, people_count)
-         VALUES ($1, $2, $3)`,
-        [guest_id, status, people_count] // Hapus personalize_id dari sini
-      );
-      return NextResponse.json(
-        { message: "RSVP berhasil dikirim!" },
-        { status: 201 }
-      );
-    }
   } catch (error: any) {
     console.error("Error submitting RSVP:", error);
     return NextResponse.json(
-      { message: "Gagal memproses RSVP.", error: error.message },
+      {
+        message: "Gagal memproses RSVP karena kesalahan server.",
+        error: error.message,
+      },
       { status: 500 }
     );
   }
