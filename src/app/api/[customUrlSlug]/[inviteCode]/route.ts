@@ -1,21 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 
-// Perbarui definisi tipe untuk params
 interface RouteParams {
-  customUrlSlug: string;
-  inviteCode: string;
+  params: {
+    customUrlSlug: string;
+    inviteCode: string;
+  };
 }
 
-export async function GET(
-  request: Request,
-  // Perubahan di sini: Hanya perlu mendefinisikan tipe untuk 'params' itu sendiri
-  // dan pastikan itu di-destrukturisasi di dalam fungsi
-  context: { params: RouteParams } // Gunakan 'context' atau nama lain, lalu akses 'context.params'
-) {
+export async function GET(req: NextRequest, context: RouteParams) {
   try {
-    // Kemudian, lakukan await dan destructuring
-    const { customUrlSlug, inviteCode } = await context.params;
+    const { customUrlSlug, inviteCode } = context.params;
 
     if (!customUrlSlug || !inviteCode) {
       return NextResponse.json(
@@ -27,9 +22,7 @@ export async function GET(
       );
     }
 
-    // ... (sisa kode Anda)
-
-    // Ambil data personalisasi berdasarkan custom URL
+    // Ambil data personalisasi berdasarkan custom_url
     const personalizeResult = await pool.query(
       `
       SELECT
@@ -60,7 +53,7 @@ export async function GET(
         gallery_image_urls
       FROM personalize
       WHERE custom_url = $1
-    `,
+      `,
       [customUrlSlug]
     );
 
@@ -73,7 +66,7 @@ export async function GET(
 
     const p = personalizeResult.rows[0];
 
-    // Ambil data tamu berdasarkan kode dan ID personalisasi
+    // Ambil data tamu berdasarkan code dan personalize_id
     const guestResult = await pool.query(
       `
       SELECT
@@ -84,7 +77,7 @@ export async function GET(
         invitation_type
       FROM guests
       WHERE code = $1 AND personalize_id = $2
-    `,
+      `,
       [inviteCode, p.personalize_id]
     );
 
@@ -99,7 +92,7 @@ export async function GET(
 
     const g = guestResult.rows[0];
 
-    // Format tanggal ke ISO string jika bertipe Date
+    // Format ISO string
     const akadDatetime =
       p.akad_datetime instanceof Date
         ? p.akad_datetime.toISOString()
@@ -110,7 +103,6 @@ export async function GET(
         ? p.resepsi_datetime.toISOString()
         : p.resepsi_datetime;
 
-    // Kirim response lengkap dengan format camelCase
     return NextResponse.json({
       personalize_id: p.personalize_id,
       groom_name: p.groom_name,
@@ -147,6 +139,7 @@ export async function GET(
     });
   } catch (error: any) {
     console.error("Error fetching invitation data:", error);
+
     if (error.code === "42703") {
       return NextResponse.json(
         {
