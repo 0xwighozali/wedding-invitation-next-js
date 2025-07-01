@@ -1,21 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 
 export async function GET(
-  request: Request,
-  { params }: { params: { personalizeId: string } }
+  req: NextRequest,
+  context: { params: { personalizeId: string } }
 ) {
+  const { personalizeId } = context.params;
+
+  if (!personalizeId) {
+    return NextResponse.json(
+      { message: "ID undangan tidak disediakan." },
+      { status: 400 }
+    );
+  }
+
   try {
-    const { personalizeId } = params;
-
-    if (!personalizeId) {
-      return NextResponse.json(
-        { message: "ID undangan tidak disediakan." },
-        { status: 400 }
-      );
-    }
-
-    // Ambil semua ucapan berdasarkan personalize_id
     const result = await pool.query(
       `SELECT id, name, message, created_at
        FROM ucapan
