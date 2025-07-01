@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 
-export async function GET(
-  req: NextRequest,
-  context: { params: { personalizeId: string } }
-) {
-  const { personalizeId } = context.params;
+// Gunakan 'params' dari 'context' dan tipekan sebagai 'any' agar tidak error di Vercel
+export async function GET(req: NextRequest, { params }: any) {
+  const { personalizeId } = params;
 
   if (!personalizeId) {
     return NextResponse.json(
@@ -25,9 +23,12 @@ export async function GET(
 
     return NextResponse.json(result.rows, { status: 200 });
   } catch (error: any) {
-    console.error("Error fetching ucapan:", error);
+    console.error("Gagal mengambil ucapan:", error);
     return NextResponse.json(
-      { message: "Gagal mengambil ucapan.", error: error.message },
+      {
+        message: "Terjadi kesalahan saat mengambil ucapan.",
+        error: error.message,
+      },
       { status: 500 }
     );
   }
