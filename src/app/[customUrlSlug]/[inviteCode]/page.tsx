@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useState, useCallback, FormEvent } from "react";
 import { useParams } from "next/navigation";
+import Head from "next/head";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+// --------------------------------------------------
+// Interface TypeScript
 interface GuestData {
   id: string;
   name: string;
@@ -28,17 +31,16 @@ interface PersonalizeData {
   resepsi_map: string | null;
   resepsi_datetime: string | null;
   website_title: string | null;
-  custom_url: string | null;
+  heroImage: string | null;
+  groomImage: string | null;
+  brideImage: string | null;
+  galleryImages: string[] | null;
   bank1_name: string | null;
   bank1_account_name: string | null;
   bank1_account_number: string | null;
   bank2_name: string | null;
   bank2_account_name: string | null;
   bank2_account_number: string | null;
-  heroImage: string | null;
-  groomImage: string | null;
-  brideImage: string | null;
-  galleryImages: string[] | null;
   guest: GuestData;
 }
 
@@ -49,6 +51,8 @@ interface UcapanData {
   created_at: string;
 }
 
+// --------------------------------------------------
+// Komponen Halaman Undangan
 export default function InvitationPage() {
   const { customUrlSlug, inviteCode } = useParams<{
     customUrlSlug: string;
@@ -59,154 +63,17 @@ export default function InvitationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [rsvpStatus, setRsvpStatus] = useState<string>("hadir");
+  // State RSVP & Ucapan
+  const [rsvpStatus, setRsvpStatus] = useState("hadir");
   const [peopleCount, setPeopleCount] = useState<number>(1);
   const [isRsvpSubmitting, setIsRsvpSubmitting] = useState(false);
 
-  const [ucapanName, setUcapanName] = useState<string>("");
-  const [ucapanMessage, setUcapanMessage] = useState<string>("");
+  const [ucapanName, setUcapanName] = useState("");
+  const [ucapanMessage, setUcapanMessage] = useState("");
   const [isUcapanSubmitting, setIsUcapanSubmitting] = useState(false);
   const [ucapanList, setUcapanList] = useState<UcapanData[]>([]);
 
-  useEffect(() => {
-    if (!customUrlSlug || !inviteCode) {
-      setError("URL undangan tidak lengkap.");
-      setLoading(false);
-      return;
-    }
-
-    const fetchData = async () => {
-      try {
-        const res = await fetch(`/api/${customUrlSlug}/${inviteCode}`);
-        if (!res.ok) {
-          const errorJson = await res.json();
-          throw new Error(
-            errorJson.message || "Data undangan tidak ditemukan."
-          );
-        }
-        const json = await res.json();
-        setData(json);
-
-        if (json.personalize_id) {
-          fetchUcapan(json.personalize_id);
-        }
-      } catch (err: any) {
-        setError(err.message);
-        toast.error(err.message, {
-          position: "top-center",
-          autoClose: 5000,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [customUrlSlug, inviteCode]);
-
-  const fetchUcapan = async (personalizeId: string) => {
-    try {
-      const res = await fetch(`/api/ucapan/${personalizeId}`);
-      if (!res.ok) {
-        throw new Error("Gagal mengambil daftar ucapan.");
-      }
-      const json = await res.json();
-      setUcapanList(json);
-    } catch (err: any) {
-      toast.error(err.message, {
-        position: "top-center",
-        autoClose: 5000,
-      });
-    }
-  };
-
-  const handleRsvpSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!customUrlSlug || !inviteCode) {
-      toast.error("URL undangan tidak lengkap.");
-      return;
-    }
-
-    setIsRsvpSubmitting(true);
-    try {
-      const res = await fetch(`/api/rsvp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          customUrlSlug: customUrlSlug,
-          inviteCode: inviteCode,
-          status: rsvpStatus,
-          people_count: peopleCount,
-        }),
-      });
-
-      if (!res.ok) {
-        const errorJson = await res.json();
-        throw new Error(errorJson.message || "Gagal mengirim RSVP.");
-      }
-
-      toast.success("RSVP berhasil dikirim!", {
-        position: "top-center",
-        autoClose: 3000,
-      });
-    } catch (err: any) {
-      toast.error(err.message, {
-        position: "top-center",
-        autoClose: 5000,
-      });
-    } finally {
-      setIsRsvpSubmitting(false);
-    }
-  };
-
-  const handleUcapanSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!ucapanName || !ucapanMessage || !customUrlSlug || !inviteCode) {
-      toast.error("Nama, pesan ucapan, kode undangan, dan URL harus diisi.");
-      return;
-    }
-
-    setIsUcapanSubmitting(true);
-    try {
-      const res = await fetch(`/api/ucapan`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          customUrlSlug: customUrlSlug,
-          inviteCode: inviteCode,
-          name: ucapanName,
-          message: ucapanMessage,
-        }),
-      });
-
-      if (!res.ok) {
-        const errorJson = await res.json();
-        throw new Error(errorJson.message || "Gagal mengirim ucapan.");
-      }
-
-      toast.success("Ucapan berhasil dikirim!", {
-        position: "top-center",
-        autoClose: 3000,
-      });
-      setUcapanName("");
-      setUcapanMessage("");
-      if (data?.personalize_id) {
-        fetchUcapan(data.personalize_id);
-      }
-    } catch (err: any) {
-      toast.error(err.message, {
-        position: "top-center",
-        autoClose: 5000,
-      });
-    } finally {
-      setIsUcapanSubmitting(false);
-    }
-  };
-
+  // Format tanggal
   const formatDateTime = (iso: string | null) => {
     if (!iso) return "";
     return new Date(iso).toLocaleString("id-ID", {
@@ -219,21 +86,117 @@ export default function InvitationPage() {
     });
   };
 
-  const getImagePath = (path: string | null, fallback: string) =>
-    path?.startsWith("/") ? path : fallback;
+  // Mendapatkan list ucapan
+  const fetchUcapan = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/ucapan/${id}`);
+      if (!res.ok) throw new Error("Gagal mengambil daftar ucapan.");
+      const json = await res.json();
+      setUcapanList(json);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  }, []);
 
-  if (loading)
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <p>Memuat undangan...</p>
-      </div>
-    );
+  // Ambil data undangan berdasarkan URL
+  useEffect(() => {
+    if (!customUrlSlug || !inviteCode) {
+      setError("URL undangan tidak lengkap.");
+      setLoading(false);
+      return;
+    }
+    (async () => {
+      try {
+        const res = await fetch(`/api/${customUrlSlug}/${inviteCode}`);
+        if (!res.ok) throw new Error("Data undangan tidak ditemukan.");
+        const json = await res.json();
+        setData(json);
+        if (json.personalize_id) fetchUcapan(json.personalize_id);
+      } catch (err: any) {
+        setError(err.message);
+        toast.error(err.message);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [customUrlSlug, inviteCode, fetchUcapan]);
 
+  // Fungsi helper untuk path gambar: utamakan URL lengkap
+  const getImagePath = (path: string | null, fallback: string) => {
+    if (!path) return fallback;
+    if (path.startsWith("http")) return path;
+    return fallback;
+  };
+
+  // Handler RSVP submit
+  const handleRsvpSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setIsRsvpSubmitting(true);
+    try {
+      const res = await fetch(`/api/rsvp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customUrlSlug,
+          inviteCode,
+          status: rsvpStatus,
+          people_count: peopleCount,
+        }),
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.message || "Gagal mengirim RSVP.");
+      }
+      toast.success("RSVP berhasil dikirim!");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsRsvpSubmitting(false);
+    }
+  };
+
+  // Handler ucapan
+  const handleUcapanSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setIsUcapanSubmitting(true);
+    if (!ucapanName || !ucapanMessage) {
+      toast.error("Nama & ucapan harus diisi.");
+      setIsUcapanSubmitting(false);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/ucapan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customUrlSlug,
+          inviteCode,
+          name: ucapanName,
+          message: ucapanMessage,
+        }),
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.message || "Gagal mengirim ucapan.");
+      }
+      toast.success("Ucapan berhasil dikirim!");
+      setUcapanName("");
+      setUcapanMessage("");
+      if (data?.personalize_id) fetchUcapan(data.personalize_id);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsUcapanSubmitting(false);
+    }
+  };
+
+  // Render loading / error
+  if (loading) return <p className="p-8 text-center">Memuat undangan...</p>;
   if (error || !data)
     return (
-      <div className="min-h-screen flex items-center justify-center text-center p-4 text-red-600 bg-red-50">
-        <p>{error || "Data undangan tidak tersedia."}</p>
-      </div>
+      <p className="p-8 text-center text-red-600">
+        {error || "Data tidak tersedia"}
+      </p>
     );
 
   const {
@@ -264,12 +227,19 @@ export default function InvitationPage() {
   } = data;
 
   return (
-    <div className="min-h-screen font-serif bg-white text-gray-800">
+    <div className="bg-white text-gray-800">
+      <Head>
+        <title>{website_title || `${groom_name} & ${bride_name}`}</title>
+        <meta
+          name="description"
+          content={`Undangan digital ${groom_name} & ${bride_name}`}
+        />
+      </Head>
       <ToastContainer />
 
-      {/* Hero Section */}
+      {/* Hero */}
       <section
-        className="h-screen flex items-center justify-center relative bg-cover bg-center"
+        className="h-screen bg-cover bg-center relative flex items-center justify-center"
         style={{
           backgroundImage: `url(${getImagePath(
             heroImage,
@@ -277,335 +247,243 @@ export default function InvitationPage() {
           )})`,
         }}
       >
-        <div className="absolute inset-0 bg-black opacity-40" />
-        <div className="relative z-10 text-center px-4 text-white">
-          <h1 className="text-4xl md:text-6xl font-bold mb-2">
+        <div className="absolute inset-0 bg-black opacity-50" />
+        <div className="relative text-white text-center px-4">
+          <h1 className="text-4xl font-bold">
             {groom_name} & {bride_name}
           </h1>
-          <p className="text-lg mb-4 italic">{website_title}</p>
-          <p className="mt-6 text-xl font-light animate-pulse">
-            Kepada Yth. Bapak/Ibu/Saudara/i:{" "}
-            <span className="font-semibold text-pink-200">{guest.name}</span>
+          {website_title && (
+            <p className="italic text-lg mt-2">{website_title}</p>
+          )}
+          <p className="mt-4 text-xl">
+            Kepada Yth. <span className="font-semibold">{guest.name}</span>
           </p>
-          <button
-            onClick={() =>
-              document
-                .getElementById("main-content")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
-            className="mt-8 px-6 py-3 bg-white text-gray-800 rounded-full shadow hover:scale-105 transition"
-          >
-            Buka Undangan <i className="ri-arrow-down-line ml-1"></i>
-          </button>
         </div>
       </section>
 
-      <main
-        id="main-content"
-        className="px-4 md:px-12 py-16 bg-gradient-to-b from-white to-pink-50"
-      >
-        {/* Couple Section */}
-        <section className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Mempelai</h2>
-          <div className="flex flex-col md:flex-row items-center justify-center gap-12">
-            <div>
+      {/* Mempelai */}
+      <section className="px-4 py-12 text-center">
+        <h2 className="text-3xl font-bold mb-8">Mempelai</h2>
+        <div className="flex flex-col md:flex-row justify-center items-center gap-12">
+          {[
+            {
+              img: groomImage,
+              name: groom_name,
+              parents: groom_parents,
+              ig: groom_ig,
+              fallback: "/default-groom.jpg",
+            },
+            {
+              img: brideImage,
+              name: bride_name,
+              parents: bride_parents,
+              ig: bride_ig,
+              fallback: "/default-bride.jpg",
+            },
+          ].map((person, i) => (
+            <div key={i} className="text-center">
               <img
-                src={getImagePath(groomImage, "/default-groom.jpg")}
-                className="w-40 h-40 object-cover rounded-full border-4 border-gray-300 mb-2 mx-auto"
-                alt="Groom"
+                src={getImagePath(person.img, person.fallback)}
+                alt={person.name}
+                className="w-40 h-40 rounded-full border-4 mx-auto object-cover"
               />
-              <h3 className="text-xl font-semibold">{groom_name}</h3>
-              <p className="text-sm">{groom_parents}</p>
-              {groom_ig && (
+              <h3 className="text-xl font-semibold mt-2">{person.name}</h3>
+              {person.parents && <p className="text-sm">{person.parents}</p>}
+              {person.ig && (
                 <a
-                  href={`https://instagram.com/${groom_ig}`}
+                  href={`https://instagram.com/${person.ig}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-500 text-sm"
+                  className="text-blue-500"
                 >
-                  @{groom_ig}
+                  @{person.ig}
                 </a>
               )}
             </div>
-            <div className="text-4xl text-pink-400 font-bold">&</div>
-            <div>
+          ))}
+        </div>
+      </section>
+
+      {/* Jadwal */}
+      <section className="px-4 py-12 text-center bg-pink-50">
+        <h2 className="text-3xl font-bold mb-8">Jadwal Acara</h2>
+        {[
+          {
+            title: "Akad Nikah",
+            loc: akad_location,
+            map: akad_map,
+            dt: akad_datetime,
+          },
+          {
+            title: "Resepsi",
+            loc: resepsi_location,
+            map: resepsi_map,
+            dt: resepsi_datetime,
+          },
+        ].map(
+          (evt, i) =>
+            evt.loc && (
+              <div key={i} className="mb-8">
+                <h3 className="text-2xl font-semibold text-pink-600">
+                  {evt.title}
+                </h3>
+                <p>{evt.loc}</p>
+                {evt.dt && <p>{formatDateTime(evt.dt)}</p>}
+                {evt.map && (
+                  <a href={evt.map} className="text-blue-500" target="_blank">
+                    Lihat Peta
+                  </a>
+                )}
+              </div>
+            )
+        )}
+      </section>
+
+      {/* Galeri */}
+      {galleryImages?.length ? (
+        <section className="px-4 py-12 text-center">
+          <h2 className="text-3xl font-bold mb-8">Galeri</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {galleryImages.map((img, i) => (
               <img
-                src={getImagePath(brideImage, "/default-bride.jpg")}
-                className="w-40 h-40 object-cover rounded-full border-4 border-gray-300 mb-2 mx-auto"
-                alt="Bride"
+                key={i}
+                src={getImagePath(img, "/default-gallery.jpg")}
+                alt={`Galeri ${i + 1}`}
+                className="w-full h-40 object-cover rounded-lg shadow"
               />
-              <h3 className="text-xl font-semibold">{bride_name}</h3>
-              <p className="text-sm">{bride_parents}</p>
-              {bride_ig && (
-                <a
-                  href={`https://instagram.com/${bride_ig}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 text-sm"
-                >
-                  @{bride_ig}
-                </a>
-              )}
-            </div>
+            ))}
           </div>
         </section>
+      ) : null}
 
-        {/* Schedule Section */}
-        <section className="text-center mb-16">
-          <h2 className="text-3xl font-bold mb-6">Jadwal Acara</h2>
-          {akad_location && (
-            <div className="mb-6">
-              <h3 className="text-xl font-semibold text-pink-600">
-                Akad Nikah
-              </h3>
-              <p>{akad_location}</p>
-              {akad_datetime && <p>{formatDateTime(akad_datetime)}</p>}
-              {akad_map && (
-                <a
-                  href={akad_map}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 text-sm mt-1 inline-block"
-                >
-                  Lihat Peta <i className="ri-map-pin-line ml-1"></i>
-                </a>
-              )}
-            </div>
-          )}
-          {resepsi_location && (
-            <div>
-              <h3 className="text-xl font-semibold text-pink-600">Resepsi</h3>
-              <p>{resepsi_location}</p>
-              {resepsi_datetime && <p>{formatDateTime(resepsi_datetime)}</p>}
-              {resepsi_map && (
-                <a
-                  href={resepsi_map}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 text-sm mt-1 inline-block"
-                >
-                  Lihat Peta <i className="ri-map-pin-line ml-1"></i>
-                </a>
-              )}
-            </div>
-          )}
-        </section>
-
-        {/* Gallery Section */}
-        {galleryImages && galleryImages.length > 0 && (
-          <section className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-6">Galeri Kami</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {galleryImages.map((img, i) => (
-                <img
+      {/* Gift */}
+      {(bank1_name || bank2_name) && (
+        <section className="px-4 py-12 text-center bg-gray-50">
+          <h2 className="text-3xl font-bold mb-6">Wedding Gift</h2>
+          <div className="flex flex-col md:flex-row justify-center gap-6">
+            {[
+              {
+                name: bank1_name,
+                accName: bank1_account_name,
+                accNum: bank1_account_number,
+              },
+              {
+                name: bank2_name,
+                accName: bank2_account_name,
+                accNum: bank2_account_number,
+              },
+            ]
+              .filter((b) => b.name)
+              .map((b, i) => (
+                <div
                   key={i}
-                  src={getImagePath(img, "/default-gallery.jpg")}
-                  className="w-full h-48 object-cover rounded-lg shadow hover:scale-105 transition"
-                  alt={`Galeri ${i + 1}`}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Gift Section */}
-        {(bank1_name || bank2_name) && (
-          <section className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">Wedding Gift</h2>
-            <p className="text-gray-600 mb-6">
-              Doa restu Anda adalah hadiah terbaik. Jika ingin memberi hadiah,
-              silakan transfer ke rekening berikut:
-            </p>
-            <div className="flex flex-col md:flex-row justify-center gap-6">
-              {[1, 2].map((num) => {
-                const name = num === 1 ? bank1_name : bank2_name;
-                const accName =
-                  num === 1 ? bank1_account_name : bank2_account_name;
-                const accNum =
-                  num === 1 ? bank1_account_number : bank2_account_number;
-                return (
-                  name && (
-                    <div
-                      key={num}
-                      className="bg-white shadow-md rounded-lg p-6 border w-full md:w-80"
-                    >
-                      <h3 className="text-xl font-semibold">{name}</h3>
-                      <p className="text-sm">A.N: {accName}</p>
-                      <p className="text-lg font-bold mt-2">{accNum}</p>
-                      <button
-                        className="mt-2 text-blue-600 text-sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(accNum || "");
-                          toast.info("Nomor rekening disalin!");
-                        }}
-                      >
-                        <i className="ri-file-copy-line"></i> Salin Nomor
-                      </button>
-                    </div>
-                  )
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* RSVP Section */}
-        <section className="text-center mb-16 p-6 bg-pink-100 rounded-lg shadow-md">
-          <h2 className="text-3xl font-bold mb-6 text-pink-700">
-            Konfirmasi Kehadiran (RSVP)
-          </h2>
-          <p className="mb-4 text-gray-700">
-            Mohon konfirmasi kehadiran Anda agar kami dapat mempersiapkan acara
-            dengan baik.
-          </p>
-          <form
-            onSubmit={handleRsvpSubmit}
-            className="max-w-md mx-auto space-y-4"
-          >
-            <div>
-              <label
-                htmlFor="rsvp-status"
-                className="block text-left text-gray-700 font-semibold mb-2"
-              >
-                Status Kehadiran:
-              </label>
-              <select
-                id="rsvp-status"
-                value={rsvpStatus}
-                onChange={(e) => setRsvpStatus(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500"
-                required
-              >
-                <option value="hadir">Hadir</option>
-                <option value="tidak hadir">Tidak Hadir</option>
-              </select>
-            </div>
-            {rsvpStatus === "hadir" && (
-              <div>
-                <label
-                  htmlFor="people-count"
-                  className="block text-left text-gray-700 font-semibold mb-2"
+                  className="bg-white p-6 rounded shadow w-full md:w-80"
                 >
-                  Jumlah Tamu yang Hadir (termasuk Anda):
-                </label>
-                <input
-                  type="number"
-                  id="people-count"
-                  value={peopleCount}
-                  onChange={(e) =>
-                    setPeopleCount(Math.max(1, parseInt(e.target.value) || 1))
-                  }
-                  min="1"
-                  className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500"
-                  required
-                />
-              </div>
-            )}
-            <button
-              type="submit"
-              disabled={isRsvpSubmitting}
-              className="w-full px-6 py-3 bg-pink-600 text-white font-semibold rounded-md shadow hover:bg-pink-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isRsvpSubmitting ? "Mengirim..." : "Kirim RSVP"}
-            </button>
-          </form>
-        </section>
-
-        {/* Ucapan Section */}
-        <section className="text-center mb-16 p-6 bg-blue-50 rounded-lg shadow-md">
-          <h2 className="text-3xl font-bold mb-6 text-blue-700">
-            Kirim Doa & Ucapan
-          </h2>
-          <form
-            onSubmit={handleUcapanSubmit}
-            className="max-w-lg mx-auto space-y-4"
-          >
-            <div>
-              <label
-                htmlFor="ucapan-name"
-                className="block text-left text-gray-700 font-semibold mb-2"
-              >
-                Nama Anda:
-              </label>
-              <input
-                type="text"
-                id="ucapan-name"
-                value={ucapanName}
-                onChange={(e) => setUcapanName(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Contoh: Budi & Keluarga"
-                required
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="ucapan-message"
-                className="block text-left text-gray-700 font-semibold mb-2"
-              >
-                Pesan Anda:
-              </label>
-              <textarea
-                id="ucapan-message"
-                value={ucapanMessage}
-                onChange={(e) => setUcapanMessage(e.target.value)}
-                rows={4}
-                className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Tulis ucapan dan doa terbaik Anda di sini..."
-                required
-              ></textarea>
-            </div>
-            <button
-              type="submit"
-              disabled={isUcapanSubmitting}
-              className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-md shadow hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isUcapanSubmitting ? "Mengirim..." : "Kirim Ucapan"}
-            </button>
-          </form>
-
-          {/* List Ucapan */}
-          <div className="mt-10 text-left">
-            <h3 className="text-2xl font-bold mb-4 text-blue-700">
-              Ucapan dari Tamu Lain:
-            </h3>
-            {ucapanList.length === 0 ? (
-              <p className="text-gray-600">
-                Belum ada ucapan. Jadilah yang pertama!
-              </p>
-            ) : (
-              <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                {ucapanList.map((ucapan) => (
-                  <div
-                    key={ucapan.id}
-                    className="bg-white p-4 rounded-lg shadow border border-gray-200"
+                  <h3 className="text-xl font-semibold">{b.name}</h3>
+                  <p className="mt-2">A.N: {b.accName}</p>
+                  <p className="text-lg font-bold">{b.accNum}</p>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(b.accNum || "");
+                      toast.info("Nomor disalin!");
+                    }}
+                    className="mt-2 text-blue-600"
                   >
-                    <p className="font-semibold text-gray-900">{ucapan.name}</p>
-                    <p className="text-gray-700 mt-1 text-sm italic">
-                      "{ucapan.message}"
-                    </p>
-                    <p className="text-xs text-gray-500 mt-2 text-right">
-                      {new Date(ucapan.created_at).toLocaleString("id-ID", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
+                    Salin
+                  </button>
+                </div>
+              ))}
           </div>
         </section>
-      </main>
+      )}
 
-      {/* Footer Section */}
-      <footer className="text-center text-sm text-gray-500 border-t py-4">
-        <p>
-          © {new Date().getFullYear()} {website_title}. All rights reserved.
-        </p>
-        <p className="text-xs mt-1">Made with ❤️ by Wedding App</p>
+      {/* RSVP */}
+      <section className="px-4 py-12 text-center bg-pink-100">
+        <h2 className="text-3xl font-bold mb-6">Konfirmasi Kehadiran</h2>
+        <form
+          className="max-w-md mx-auto space-y-4"
+          onSubmit={handleRsvpSubmit}
+        >
+          <select
+            value={rsvpStatus}
+            onChange={(e) => setRsvpStatus(e.target.value)}
+            required
+            className="w-full p-3 border rounded"
+          >
+            <option value="hadir">Hadir</option>
+            <option value="tidak hadir">Tidak Hadir</option>
+          </select>
+          {rsvpStatus === "hadir" && (
+            <input
+              type="number"
+              min={1}
+              value={peopleCount}
+              onChange={(e) => setPeopleCount(Math.max(1, +e.target.value))}
+              className="w-full p-3 border rounded"
+              required
+            />
+          )}
+          <button
+            type="submit"
+            disabled={isRsvpSubmitting}
+            className="w-full bg-pink-600 text-white p-3 rounded"
+          >
+            {isRsvpSubmitting ? "Mengirim..." : "Kirim RSVP"}
+          </button>
+        </form>
+      </section>
+
+      {/* Ucapan */}
+      <section className="px-4 py-12 text-center bg-blue-50">
+        <h2 className="text-3xl font-bold mb-6">Doa & Ucapan</h2>
+        <form
+          className="max-w-lg mx-auto space-y-4"
+          onSubmit={handleUcapanSubmit}
+        >
+          <input
+            type="text"
+            value={ucapanName}
+            onChange={(e) => setUcapanName(e.target.value)}
+            placeholder="Nama Anda"
+            className="w-full p-3 border rounded"
+            required
+          />
+          <textarea
+            rows={3}
+            value={ucapanMessage}
+            onChange={(e) => setUcapanMessage(e.target.value)}
+            placeholder="Ucapan & doa..."
+            className="w-full p-3 border rounded"
+            required
+          />
+          <button
+            type="submit"
+            disabled={isUcapanSubmitting}
+            className="w-full bg-blue-600 text-white p-3 rounded"
+          >
+            {isUcapanSubmitting ? "Mengirim..." : "Kirim Ucapan"}
+          </button>
+        </form>
+        <div className="mt-8 space-y-4 max-w-lg mx-auto">
+          {ucapanList.length ? (
+            ucapanList.map((u) => (
+              <div key={u.id} className="text-left bg-white p-4 rounded shadow">
+                <p className="font-semibold">{u.name}</p>
+                <p className="italic mt-1">"{u.message}"</p>
+                <p className="text-xs text-gray-500 text-right">
+                  {new Date(u.created_at).toLocaleString("id-ID")}
+                </p>
+              </div>
+            ))
+          ) : (
+            <p>Belum ada ucapan. Jadilah yang pertama!</p>
+          )}
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="text-center py-6 text-gray-500 text-sm">
+        © {new Date().getFullYear()} {website_title || ""}. All rights reserved.
       </footer>
     </div>
   );

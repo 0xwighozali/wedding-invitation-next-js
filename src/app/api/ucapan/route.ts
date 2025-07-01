@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db"; // Pastikan path ini benar
+import pool from "@/lib/db"; // Sesuaikan path dengan struktur project kamu
 
 export async function POST(request: Request) {
   try {
-    // Ambil customUrlSlug dan inviteCode dari body request
     const { customUrlSlug, inviteCode, name, message } = await request.json();
 
     // Validasi input
@@ -14,8 +13,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Cari guest_id dan personalize_id berdasarkan inviteCode dan customUrlSlug
-    const guestDataResult = await pool.query(
+    // Ambil guest_id dan personalize_id berdasarkan inviteCode dan customUrlSlug
+    const result = await pool.query(
       `SELECT
          g.id as guest_id,
          p.id as personalize_id
@@ -25,21 +24,20 @@ export async function POST(request: Request) {
       [inviteCode, customUrlSlug]
     );
 
-    if (guestDataResult.rows.length === 0) {
+    if (result.rows.length === 0) {
       return NextResponse.json(
         { message: "Kode undangan atau URL tidak ditemukan." },
         { status: 404 }
       );
     }
 
-    const { guest_id, personalize_id } = guestDataResult.rows[0];
+    const { guest_id, personalize_id } = result.rows[0];
 
-    // Masukkan data ucapan ke database
-    // Gunakan guest_id yang sudah ditemukan
+    // Simpan ucapan
     await pool.query(
-      `INSERT INTO ucapan (personalize_id, guest_id, name, message)
+      `INSERT INTO ucapan (guest_id, personalize_id, name, message)
        VALUES ($1, $2, $3, $4)`,
-      [personalize_id, guest_id, name, message]
+      [guest_id, personalize_id, name, message]
     );
 
     return NextResponse.json(

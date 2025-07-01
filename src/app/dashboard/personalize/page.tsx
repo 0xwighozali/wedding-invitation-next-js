@@ -341,7 +341,7 @@ export default function PersonalizePage() {
   // --- Helper untuk Mengunggah Gambar ke Server ---
   const uploadImageToServer = async (file: File) => {
     const formData = new FormData();
-    formData.append("file", file); // Pastikan nama 'file' cocok dengan ekspektasi backend
+    formData.append("file", file);
 
     const res = await fetch("/api/uploads", {
       method: "POST",
@@ -350,7 +350,7 @@ export default function PersonalizePage() {
 
     const data = await res.json();
     if (data.success) {
-      return data.url;
+      return data.url; // URL gambar di Cloudinary
     } else {
       console.error("Unggahan gagal:", data.message, data.error);
       throw new Error(
