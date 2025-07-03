@@ -265,7 +265,7 @@ export default function InvitationPage() {
         className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-cover bg-center"
         style={{
           backgroundImage: `url(${getImagePath(
-            coverImage || heroImage,
+            coverImage,
             "/default-cover.jpg"
           )})`,
         }}
@@ -328,10 +328,26 @@ export default function InvitationPage() {
         pauseOnHover
       />
 
-      {/* Hero Section: Tanggal Pernikahan */}
-      <section className="py-20 text-center bg-pink-100">
-        <div className="max-w-3xl mx-auto px-4">
-          <h2 className="text-4xl md:text-5xl font-bold text-pink-700 mb-4">
+      <section
+        className="relative py-40 bg-cover bg-center bg-no-repeat text-center text-white"
+        style={{
+          backgroundImage: `url(${getImagePath(
+            heroImage,
+            "/default-cover.jpg"
+          )})`,
+        }}
+      >
+        {/* Overlay gelap + shadow dalam lebih luas */}
+        <div
+          className="absolute inset-0 z-0"
+          style={{
+            boxShadow: "inset 100px -200px 200px rgba(57, 31, 31, 0.6)",
+          }}
+        ></div>
+
+        {/* Konten */}
+        <div className="relative z-10 max-w-3xl mx-auto px-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-pink-200 mb-4">
             <AiOutlineCalendar
               className="inline-block mr-2 align-middle"
               size={40}
@@ -344,20 +360,21 @@ export default function InvitationPage() {
                 year: "numeric",
               })}
           </h2>
+
           <h1 className="text-4xl md:text-6xl font-bold font-serif mb-4 animate-fade-in">
             {(website_title || `${groom_name} & ${bride_name}`)
               .split(",")
               .map((s) => s.trim())
               .join(" & ")}
           </h1>
-          <p className="text-xl text-gray-700 italic mb-8">{website_title}</p>
 
-          <p className="text-lg text-gray-800">
-            Turut mengundang Bapak/Ibu/Saudara/i:
-          </p>
-          <p className="text-2xl font-semibold text-pink-600 mt-2">
+          <p className="text-xl italic mb-8">{website_title}</p>
+
+          <p className="text-lg">Turut mengundang Bapak/Ibu/Saudara/i:</p>
+          <p className="text-2xl font-semibold text-pink-300 mt-2">
             {guest.name}
           </p>
+
           <button
             onClick={() =>
               document
