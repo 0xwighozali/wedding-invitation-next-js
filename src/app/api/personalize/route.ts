@@ -240,7 +240,7 @@ export async function PUT(req: Request) {
         gallery_image_urls = $18::jsonb,
         bank1_name = $19, bank1_account_name = $20, bank1_account_number = $21,
         bank2_name = $22, bank2_account_name = $23, bank2_account_number = $24, 
-        hero_image_url = $26, updated_at = NOW()
+        cover_image_url = $26, updated_at = NOW()
       WHERE id = $25`,
       [
         groomName,
