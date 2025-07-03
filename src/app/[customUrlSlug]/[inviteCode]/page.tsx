@@ -373,7 +373,7 @@ export default function InvitationPage() {
 
       <main id="main-content" className="px-4 md:px-12 py-16">
         {/* Couple Section */}
-        <section className="mb-16 px-4">
+        <section className="mb-16 px-2">
           <h2 className="text-3xl md:text-4xl font-bold mb-12 text-center">
             Mempelai
           </h2>

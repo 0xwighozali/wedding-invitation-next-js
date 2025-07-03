@@ -76,6 +76,7 @@ interface PersonalizationFormState {
   bank2Name: string;
   bank2AccountName: string;
   bank2AccountNumber: string;
+  cover_image_url: string;
   hero_image_url: string;
   groom_image_url: string;
   bride_image_url: string;
@@ -107,6 +108,7 @@ export default function PersonalizePage() {
     bank2Name: "",
     bank2AccountName: "",
     bank2AccountNumber: "",
+    cover_image_url: "",
     hero_image_url: "",
     groom_image_url: "",
     bride_image_url: "",
@@ -114,6 +116,7 @@ export default function PersonalizePage() {
   });
 
   // State untuk file gambar (untuk pratinjau dan potensi unggahan)
+  const [coverImage, setCoverImage] = useState<File | null>(null);
   const [heroImage, setHeroImage] = useState<File | null>(null);
   const [groomImage, setGroomImage] = useState<File | null>(null);
   const [brideImage, setBrideImage] = useState<File | null>(null);
@@ -195,6 +198,7 @@ export default function PersonalizePage() {
             bank2Name: json.data.bank2_name || "",
             bank2AccountName: json.data.bank2_account_name || "",
             bank2AccountNumber: json.data.bank2_account_number || "",
+            cover_image_url: json.data.cover_image_url || "",
             hero_image_url: json.data.hero_image_url || "",
             groom_image_url: json.data.groom_image_url || "",
             bride_image_url: json.data.bride_image_url || "",
@@ -203,12 +207,15 @@ export default function PersonalizePage() {
           }));
 
           // Gunakan Promise.all untuk mengambil gambar secara bersamaan
-          const [loadedHero, loadedGroom, loadedBride] = await Promise.all([
-            loadImageAsFile(json.data.hero_image_url, "hero.jpg"),
-            loadImageAsFile(json.data.groom_image_url, "groom.jpg"),
-            loadImageAsFile(json.data.bride_image_url, "bride.jpg"),
-          ]);
+          const [loadedCover, loadedHero, loadedGroom, loadedBride] =
+            await Promise.all([
+              loadImageAsFile(json.data.cover_image_url, "cover.jpg"),
+              loadImageAsFile(json.data.hero_image_url, "hero.jpg"),
+              loadImageAsFile(json.data.groom_image_url, "groom.jpg"),
+              loadImageAsFile(json.data.bride_image_url, "bride.jpg"),
+            ]);
 
+          setCoverImage(loadedCover);
           setHeroImage(loadedHero);
           setGroomImage(loadedGroom);
           setBrideImage(loadedBride);
@@ -396,6 +403,7 @@ export default function PersonalizePage() {
         bank2AccountName: form.bank2AccountName,
         bank2AccountNumber: form.bank2AccountNumber,
         // Kirim URL yang sudah ada untuk gambar, mereka tidak akan diperbarui oleh formulir ini
+        coverImage: form.cover_image_url,
         heroImage: form.hero_image_url,
         groomImage: form.groom_image_url,
         brideImage: form.bride_image_url,
@@ -437,6 +445,18 @@ export default function PersonalizePage() {
       const personalizeId = form.personalizeId; // Ambil ID dari state form yang sudah diisi
 
       // Tangani Hero Image
+      let newCoverUrl = form.cover_image_url; // Default ke URL yang sudah ada
+      if (coverImage && coverImage instanceof File) {
+        newCoverUrl = await toast.promise(uploadImageToServer(coverImage), {
+          pending: "Mengunggah Cover Image...",
+          success: "Cover Image berhasil diunggah!",
+          error: "Gagal mengunggah Cover Image!",
+        });
+      } else if (!coverImage && form.cover_image_url) {
+        // Jika file dihapus dari pratinjau dan sebelumnya ada URL, set URL menjadi kosong
+        newCoverUrl = "";
+      }
+
       let newHeroUrl = form.hero_image_url; // Default ke URL yang sudah ada
       if (heroImage && heroImage instanceof File) {
         newHeroUrl = await toast.promise(uploadImageToServer(heroImage), {
@@ -542,6 +562,7 @@ export default function PersonalizePage() {
         bank2AccountName: form.bank2AccountName,
         bank2AccountNumber: form.bank2AccountNumber,
         // Ganti URL gambar dengan yang baru
+        coverImage: newCoverUrl,
         heroImage: newHeroUrl,
         groomImage: newGroomUrl,
         brideImage: newBrideUrl,
@@ -559,6 +580,7 @@ export default function PersonalizePage() {
         // Perbarui state formulir dengan URL baru setelah unggahan berhasil
         setForm((prev) => ({
           ...prev, // Sebarkan state sebelumnya untuk mempertahankan field lain
+          cover_image_url: newCoverUrl,
           hero_image_url: newHeroUrl,
           groom_image_url: newGroomUrl,
           bride_image_url: newBrideUrl,
@@ -813,6 +835,21 @@ export default function PersonalizePage() {
         </div>
 
         {/* Bagian Unggah Gambar */}
+        <div>
+          <label className="block mb-1 font-semibold text-gray-700">
+            Cover Image
+          </label>
+          {renderUploadBox(
+            coverImage,
+            setCoverImage,
+            () => {
+              setCoverImage(null);
+              setForm((prev) => ({ ...prev, cover_image_url: "" })); // Clear URL di form state
+            },
+            "cover-image-upload"
+          )}
+        </div>
+
         <div>
           <label className="block mb-1 font-semibold text-gray-700">
             Hero Image

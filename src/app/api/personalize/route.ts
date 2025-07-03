@@ -28,6 +28,7 @@ interface PersonalizeData {
   resepsiDateTime: string;
   websiteTitle: string;
   customUrl: string;
+  coverImage: string;
   heroImage: string;
   groomImage: string;
   brideImage: string;
@@ -118,6 +119,7 @@ export async function PUT(req: Request) {
     const payload: PersonalizeData = await req.json();
     const {
       personalizeId,
+      coverImage,
       heroImage,
       groomImage,
       brideImage,
@@ -160,7 +162,7 @@ export async function PUT(req: Request) {
     }
 
     const original = await pool.query(
-      `SELECT hero_image_url, groom_image_url, bride_image_url, gallery_image_urls, custom_url
+      `SELECT cover_image_url, hero_image_url, groom_image_url, bride_image_url, gallery_image_urls, custom_url
        FROM personalize WHERE id = $1`,
       [authorizedPersonalizeId]
     );
@@ -188,6 +190,12 @@ export async function PUT(req: Request) {
     }
 
     // Hapus gambar lama jika diganti
+    if (
+      originalData.cover_image_url &&
+      originalData.cover_image_url !== coverImage
+    ) {
+      await deleteFileFromCloudinary(originalData.cover_image_url);
+    }
     if (
       originalData.hero_image_url &&
       originalData.hero_image_url !== heroImage
@@ -231,8 +239,8 @@ export async function PUT(req: Request) {
         hero_image_url = $15, groom_image_url = $16, bride_image_url = $17,
         gallery_image_urls = $18::jsonb,
         bank1_name = $19, bank1_account_name = $20, bank1_account_number = $21,
-        bank2_name = $22, bank2_account_name = $23, bank2_account_number = $24,
-        updated_at = NOW()
+        bank2_name = $22, bank2_account_name = $23, bank2_account_number = $24, 
+        hero_image_url = $26, updated_at = NOW()
       WHERE id = $25`,
       [
         groomName,
@@ -260,6 +268,7 @@ export async function PUT(req: Request) {
         bank2AccountName,
         bank2AccountNumber,
         authorizedPersonalizeId,
+        coverImage,
       ]
     );
 
