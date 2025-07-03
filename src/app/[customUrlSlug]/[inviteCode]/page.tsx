@@ -344,18 +344,14 @@ export default function InvitationPage() {
                 year: "numeric",
               })}
           </h2>
-          <p className="text-xl text-gray-700 italic mb-8">
+          <h1 className="text-4xl md:text-6xl font-bold font-serif mb-4 animate-fade-in">
             {(website_title || `${groom_name} & ${bride_name}`)
               .split(",")
-              .map((line, idx) => (
-                <h1
-                  key={idx}
-                  className="text-4xl md:text-6xl font-bold font-serif animate-fade-in mb-2"
-                >
-                  {line.trim()}
-                </h1>
-              ))}
-          </p>
+              .map((s) => s.trim())
+              .join(" & ")}
+          </h1>
+          <p className="text-xl text-gray-700 italic mb-8">{website_title}</p>
+
           <p className="text-lg text-gray-800">
             Turut mengundang Bapak/Ibu/Saudara/i:
           </p>
@@ -383,65 +379,76 @@ export default function InvitationPage() {
           </h2>
 
           {/* Groom Section */}
-          <div className="flex flex-row items-center justify-center gap-4 sm:gap-8 mb-12">
+          <div className="flex flex-row items-stretch justify-center gap-4 sm:gap-8 mb-12">
             {/* Foto Groom */}
-            <div className="w-28 h-28 sm:w-36 sm:h-36 md:w-48 md:h-48 flex-shrink-0">
+            <div
+              className="w-48 h-48 sm:w-60 sm:h-60 md:w-72 md:h-72 flex-shrink-0 shadow-lg overflow-hidden"
+              style={{
+                borderTopRightRadius: "35px",
+                borderBottomLeftRadius: "35px",
+                borderBottomRightRadius: "0",
+                borderTopLeftRadius: "0",
+              }}
+            >
               <img
                 src={getImagePath(groomImage, "/default-groom.jpg")}
                 alt="Groom"
-                className="w-full h-full object-cover border-4 border-gray-300"
+                className="w-full h-full object-cover"
               />
             </div>
 
             {/* Data Groom */}
-            <div className="text-left">
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
+            <div className="flex flex-col justify-center">
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-800 border-b border-pink-400 inline-block pb-1">
                 {groom_name}
               </h3>
-              <p className="text-sm text-gray-600">{groom_parents}</p>
+              <p className="text-sm text-gray-600 mt-1">{groom_parents}</p>
               {groom_ig && (
                 <a
                   href={`https://instagram.com/${groom_ig}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-500 text-sm block mt-1"
+                  className="text-blue-500 text-sm flex items-center gap-1 mt-2"
                 >
-                  @{groom_ig}
+                  <i className="ri-instagram-line"></i>@{groom_ig}
                 </a>
               )}
             </div>
           </div>
 
-          {/* Ikon & */}
-          <div className="text-4xl font-bold text-center text-pink-500 mb-12">
-            &
-          </div>
-
           {/* Bride Section */}
-          <div className="flex flex-row-reverse items-center justify-center gap-4 sm:gap-8">
+          <div className="flex flex-row-reverse items-stretch justify-center gap-4 sm:gap-8">
             {/* Foto Bride */}
-            <div className="w-28 h-28 sm:w-36 sm:h-36 md:w-48 md:h-48 flex-shrink-0">
+            <div
+              className="w-48 h-48 sm:w-60 sm:h-60 md:w-72 md:h-72 flex-shrink-0 shadow-lg overflow-hidden rounded-[60px]"
+              style={{
+                borderTopRightRadius: "0",
+                borderBottomLeftRadius: "0",
+                borderBottomRightRadius: "35px",
+                borderTopLeftRadius: "35px",
+              }}
+            >
               <img
                 src={getImagePath(brideImage, "/default-bride.jpg")}
                 alt="Bride"
-                className="w-full h-full object-cover border-4 border-gray-300"
+                className="w-full h-full object-cover"
               />
             </div>
 
             {/* Data Bride */}
-            <div className="text-right">
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-800">
+            <div className="flex flex-col justify-center text-right">
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-800 border-b border-pink-400 inline-block pb-1">
                 {bride_name}
               </h3>
-              <p className="text-sm text-gray-600">{bride_parents}</p>
+              <p className="text-sm text-gray-600 mt-1">{bride_parents}</p>
               {bride_ig && (
                 <a
                   href={`https://instagram.com/${bride_ig}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-500 text-sm block mt-1"
+                  className="text-blue-500 text-sm flex items-center justify-end gap-1 mt-2"
                 >
-                  @{bride_ig}
+                  <i className="ri-instagram-line"></i>@{bride_ig}
                 </a>
               )}
             </div>
