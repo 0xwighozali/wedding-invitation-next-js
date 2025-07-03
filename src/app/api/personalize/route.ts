@@ -114,6 +114,7 @@ export async function GET(req: NextRequest) {
 }
 
 // --- PUT handler ---
+// --- PUT handler ---
 export async function PUT(req: Request) {
   try {
     const payload: PersonalizeData = await req.json();
@@ -235,13 +236,13 @@ export async function PUT(req: Request) {
         groom_parents = $5, bride_parents = $6,
         akad_location = $7, akad_map = $8, akad_datetime = $9,
         resepsi_location = $10, resepsi_map = $11, resepsi_datetime = $12,
-        website_title = $13, custom_url = $14,
-        hero_image_url = $15, groom_image_url = $16, bride_image_url = $17,
-        gallery_image_urls = $18::jsonb,
-        bank1_name = $19, bank1_account_name = $20, bank1_account_number = $21,
-        bank2_name = $22, bank2_account_name = $23, bank2_account_number = $24, 
-        cover_image_url = $26, updated_at = NOW()
-      WHERE id = $25`,
+        website_title = $13, custom_url = $14, cover_image_url = $15,
+        hero_image_url = $16, groom_image_url = $17, bride_image_url = $18,
+        gallery_image_urls = $19::jsonb,
+        bank1_name = $20, bank1_account_name = $21, bank1_account_number = $22,
+        bank2_name = $23, bank2_account_name = $24, bank2_account_number = $25,
+        updated_at = NOW()
+      WHERE id = $26`,
       [
         groomName,
         groomIg,
@@ -257,6 +258,7 @@ export async function PUT(req: Request) {
         resepsiDateTime,
         websiteTitle,
         customUrl,
+        coverImage, // $15
         heroImage,
         groomImage,
         brideImage,
@@ -267,8 +269,7 @@ export async function PUT(req: Request) {
         bank2Name,
         bank2AccountName,
         bank2AccountNumber,
-        authorizedPersonalizeId,
-        coverImage,
+        authorizedPersonalizeId, // $26
       ]
     );
 
