@@ -344,7 +344,18 @@ export default function InvitationPage() {
                 year: "numeric",
               })}
           </h2>
-          <p className="text-xl text-gray-700 italic mb-8">{website_title}</p>
+          <p className="text-xl text-gray-700 italic mb-8">
+            {(website_title || `${groom_name} & ${bride_name}`)
+              .split(",")
+              .map((line, idx) => (
+                <h1
+                  key={idx}
+                  className="text-4xl md:text-6xl font-bold font-serif animate-fade-in mb-2"
+                >
+                  {line.trim()}
+                </h1>
+              ))}
+          </p>
           <p className="text-lg text-gray-800">
             Turut mengundang Bapak/Ibu/Saudara/i:
           </p>
