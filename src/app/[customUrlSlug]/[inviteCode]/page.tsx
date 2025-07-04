@@ -337,54 +337,46 @@ export default function InvitationPage() {
           )})`,
         }}
       >
-        {/* Overlay gelap + shadow dalam lebih luas */}
-        <div
-          className="absolute inset-0 z-0"
-          style={{
-            boxShadow: "inset 100px -200px 200px rgba(57, 31, 31, 0.6)",
-          }}
-        ></div>
+        {/* Overlay gradasi gelap transparan */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-transparent z-0"></div>
 
         {/* Konten */}
         <div className="relative z-10 max-w-3xl mx-auto px-4">
-          <h2 className="text-4xl md:text-5xl font-bold text-pink-200 mb-4">
-            <AiOutlineCalendar
-              className="inline-block mr-2 align-middle"
-              size={40}
-            />
-            {weddingDate &&
-              formatDate(weddingDate, {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-          </h2>
+          <p className="text-base font-light mb-1">The Wedding Of</p>
 
-          <h1 className="text-4xl md:text-6xl font-bold font-serif mb-4 animate-fade-in">
+          <h1 className="text-4xl md:text-6xl font-bold font-serif mb-16 animate-fade-in">
             {(website_title || `${groom_name} & ${bride_name}`)
               .split(",")
               .map((s) => s.trim())
               .join(" & ")}
           </h1>
 
-          <p className="text-xl italic mb-8">{website_title}</p>
-
-          <p className="text-lg">Turut mengundang Bapak/Ibu/Saudara/i:</p>
-          <p className="text-2xl font-semibold text-pink-300 mt-2">
-            {guest.name}
+          <p className="text-lg md:text-xl font-light mb-1">
+            Kepada Yth. Bapak/Ibu/Saudara/i: <br />
+            <span className="font-semibold text-pink-200">{guest.name}</span>
           </p>
 
-          <button
-            onClick={() =>
-              document
-                .getElementById("main-content")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
-            className="mt-8 px-6 py-3 bg-pink-600 text-white font-semibold rounded-full shadow hover:bg-pink-700 transition"
-          >
-            Lihat Detail Acara <i className="ri-arrow-down-line ml-1"></i>
-          </button>
+          <p className="text-md md:text-xl font-light mb-10">
+            Kami mengundang anda ke pernikahan kami yang bertepatan pada
+            tanggal:
+          </p>
+
+          {/* Garis pembatas */}
+          <div className="w-32 h-px bg-white/60 mx-auto my-4"></div>
+
+          {/* Format tanggal dd.mm.yyyy | HH.mm WIB */}
+          <p className="text-lg mt-2 drop-shadow-sm tracking-wide">
+            {weddingDate &&
+              (() => {
+                const date = new Date(weddingDate);
+                const day = String(date.getDate()).padStart(2, "0");
+                const month = String(date.getMonth() + 1).padStart(2, "0");
+                const year = date.getFullYear();
+                const hours = String(date.getHours()).padStart(2, "0");
+                const minutes = String(date.getMinutes()).padStart(2, "0");
+                return `${day}.${month}.${year} | ${hours}.${minutes} WIB`;
+              })()}
+          </p>
         </div>
       </section>
 
